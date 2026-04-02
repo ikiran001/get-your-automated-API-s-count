@@ -134,6 +134,10 @@ A static UI in `docs/` runs the same comparison **in the browser** (no server; f
 
 From the repo: `cd docs && python3 -m http.server 8080` then open **http://localhost:8080/**. External OpenAPI URLs are still subject to CORS (same as on GitHub Pages); use upload or the built-in relay if direct fetch fails.
 
+**Works on localhost but not on GitHub Pages**
+
+That usually means the OpenAPI server sends CORS for `http://localhost:…` but **not** for `https://<user>.github.io`. Browsers enforce that per origin. Fix: upload the spec file, or ask the API team to allow your Pages origin (or `*` for a public spec). Relays can also behave differently on office networks—try from another network or device.
+
 **Host on GitHub (pick one)**
 
 - **Branch `/docs`:** Repository → **Settings** → **Pages** → **Build and deployment** → Source: **Deploy from a branch** → Branch `main`, folder **`/docs`**, Save. The site URL will be `https://<user>.github.io/<repo>/`.

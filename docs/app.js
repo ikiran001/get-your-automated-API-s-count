@@ -111,8 +111,15 @@ function isBrowserCorsOrNetworkError(err) {
   return /Failed to fetch|NetworkError|Load failed|network|aborted/i.test(m);
 }
 
+const FETCH_DIRECT_INIT = { mode: "cors", credentials: "omit" };
+const FETCH_PROXY_INIT = {
+  mode: "cors",
+  credentials: "omit",
+  referrerPolicy: "no-referrer",
+};
+
 async function fetchOpenApiJsonDirect(trimmed) {
-  const res = await fetch(trimmed, { mode: "cors" });
+  const res = await fetch(trimmed, FETCH_DIRECT_INIT);
   if (!res.ok) throw new Error(`HTTP ${res.status} loading OpenAPI document.`);
 
   const ct = (res.headers.get("Content-Type") || "").toLowerCase();
@@ -136,7 +143,7 @@ async function fetchOpenApiJsonDirect(trimmed) {
 async function fetchOpenApiJsonViaCodetabs(trimmed) {
   const proxyUrl =
     "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(trimmed);
-  const res = await fetch(proxyUrl, { mode: "cors" });
+  const res = await fetch(proxyUrl, FETCH_PROXY_INIT);
   if (!res.ok) throw new Error(`CORS relay HTTP ${res.status}`);
   const text = await res.text();
   try {
@@ -149,7 +156,19 @@ async function fetchOpenApiJsonViaCodetabs(trimmed) {
 async function fetchOpenApiJsonViaAllOrigins(trimmed) {
   const proxyUrl =
     "https://api.allorigins.win/raw?url=" + encodeURIComponent(trimmed);
-  const res = await fetch(proxyUrl, { mode: "cors" });
+  const res = await fetch(proxyUrl, FETCH_PROXY_INIT);
+  if (!res.ok) throw new Error(`CORS relay HTTP ${res.status}`);
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error("CORS relay returned data that is not valid JSON.");
+  }
+}
+
+async function fetchOpenApiJsonViaCorsProxyIo(trimmed) {
+  const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(trimmed);
+  const res = await fetch(proxyUrl, FETCH_PROXY_INIT);
   if (!res.ok) throw new Error(`CORS relay HTTP ${res.status}`);
   const text = await res.text();
   try {
@@ -185,10 +204,18 @@ async function fetchOpenApiJson(url) {
       const json = await fetchOpenApiJsonViaAllOrigins(trimmed);
       return { json, viaProxy: true };
     } catch {
+      /* try next relay */
+    }
+    try {
+      const json = await fetchOpenApiJsonViaCorsProxyIo(trimmed);
+      return { json, viaProxy: true };
+    } catch {
       throw new Error(
-        "Your browser blocked this URL (CORS), and public CORS relays could not load it either. " +
-          "Fix: use “Upload OpenAPI JSON” (open the URL in a new tab and save the file), or ask the API team to send " +
-          "Access-Control-Allow-Origin so GitHub Pages can fetch the spec directly."
+        "OpenAPI URL failed on this site (common on GitHub Pages): either CORS does not allow " +
+          window.location.origin +
+          ", or public CORS relays are blocked from your network. " +
+          "If it only works on localhost, the API likely allows http://localhost but not github.io. " +
+          "Fix: use “Upload OpenAPI JSON”, or ask the API team to add Access-Control-Allow-Origin for your Pages URL (or * for public specs)."
       );
     }
   }
