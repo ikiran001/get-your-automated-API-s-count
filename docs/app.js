@@ -106,9 +106,30 @@ function readJsonFile(file) {
 
 function isBrowserCorsOrNetworkError(err) {
   if (!err) return false;
-  if (err.name === "TypeError") return true;
+  const n = err.name || "";
+  if (n === "TypeError" || n === "NetworkError" || n === "SecurityError") return true;
   const m = String(err.message || "");
-  return /Failed to fetch|NetworkError|Load failed|network|aborted/i.test(m);
+  return /Failed to fetch|NetworkError|Load failed|network|aborted|CORS|cross-origin|blocked/i.test(
+    m
+  );
+}
+
+/** User-visible message when URL load fails (never leave bare “Failed to fetch”). */
+function formatOpenApiLoadError(err) {
+  const m = String(err && err.message ? err.message : err || "");
+  const n = err && err.name ? String(err.name) : "";
+  if (
+    /failed to fetch/i.test(m) ||
+    /networkerror/i.test(n) ||
+    /load failed/i.test(m)
+  ) {
+    return (
+      "Could not load the OpenAPI URL from this page (browser blocked cross-origin access, a relay failed, or an extension blocked the request). " +
+      "Reliable fix: open your OpenAPI link in a new tab → Save As → use “Upload OpenAPI JSON”. " +
+      "Also push the latest site from GitHub, hard-refresh (Ctrl+Shift+R or Cmd+Shift+R), and try turning off ad blockers for this page."
+    );
+  }
+  return m || "Could not load OpenAPI.";
 }
 
 const FETCH_DIRECT_INIT = { mode: "cors", credentials: "omit" };
@@ -153,7 +174,24 @@ async function fetchOpenApiJsonViaCodetabs(trimmed) {
   }
 }
 
-async function fetchOpenApiJsonViaAllOrigins(trimmed) {
+async function fetchOpenApiJsonViaAllOriginsGet(trimmed) {
+  const proxyUrl =
+    "https://api.allorigins.win/get?url=" + encodeURIComponent(trimmed);
+  const res = await fetch(proxyUrl, FETCH_PROXY_INIT);
+  if (!res.ok) throw new Error(`CORS relay HTTP ${res.status}`);
+  const wrap = await res.json();
+  const code = wrap && wrap.status && wrap.status.http_code;
+  if (code && code !== 200) throw new Error(`OpenAPI origin returned HTTP ${code}`);
+  const text = wrap && wrap.contents;
+  if (typeof text !== "string") throw new Error("CORS relay returned an empty body.");
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error("CORS relay returned data that is not valid JSON.");
+  }
+}
+
+async function fetchOpenApiJsonViaAllOriginsRaw(trimmed) {
   const proxyUrl =
     "https://api.allorigins.win/raw?url=" + encodeURIComponent(trimmed);
   const res = await fetch(proxyUrl, FETCH_PROXY_INIT);
@@ -194,30 +232,25 @@ async function fetchOpenApiJson(url) {
     if (!isBrowserCorsOrNetworkError(directErr)) {
       throw directErr;
     }
-    try {
-      const json = await fetchOpenApiJsonViaCodetabs(trimmed);
-      return { json, viaProxy: true };
-    } catch {
-      /* try next relay */
+    const relays = [
+      fetchOpenApiJsonViaCodetabs,
+      fetchOpenApiJsonViaAllOriginsGet,
+      fetchOpenApiJsonViaAllOriginsRaw,
+      fetchOpenApiJsonViaCorsProxyIo,
+    ];
+    for (const relay of relays) {
+      try {
+        const json = await relay(trimmed);
+        return { json, viaProxy: true };
+      } catch {
+        /* try next relay */
+      }
     }
-    try {
-      const json = await fetchOpenApiJsonViaAllOrigins(trimmed);
-      return { json, viaProxy: true };
-    } catch {
-      /* try next relay */
-    }
-    try {
-      const json = await fetchOpenApiJsonViaCorsProxyIo(trimmed);
-      return { json, viaProxy: true };
-    } catch {
-      throw new Error(
-        "OpenAPI URL failed on this site (common on GitHub Pages): either CORS does not allow " +
-          window.location.origin +
-          ", or public CORS relays are blocked from your network. " +
-          "If it only works on localhost, the API likely allows http://localhost but not github.io. " +
-          "Fix: use “Upload OpenAPI JSON”, or ask the API team to add Access-Control-Allow-Origin for your Pages URL (or * for public specs)."
-      );
-    }
+    throw new Error(
+      "OpenAPI URL failed: direct request and all public CORS relays failed from " +
+        window.location.origin +
+        ". Upload the JSON file, or ask the API team to send Access-Control-Allow-Origin for this origin."
+    );
   }
 }
 
@@ -385,10 +418,7 @@ els.form.addEventListener("submit", async (e) => {
         openapi = loaded.json;
         viaProxy = loaded.viaProxy;
       } catch (fetchErr) {
-        const msg =
-          fetchErr.message ||
-          "Could not load OpenAPI from URL. Upload the JSON file or use a URL that allows browser access (CORS).";
-        showError(msg);
+        showError(formatOpenApiLoadError(fetchErr));
         return;
       }
       if (viaProxy && els.openapiLoadNotice) {
