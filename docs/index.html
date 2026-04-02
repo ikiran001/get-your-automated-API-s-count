@@ -62,6 +62,7 @@
       </form>
 
       <div id="results" class="hidden">
+        <p id="openapi-load-notice" class="alert info hidden" role="status"></p>
         <div class="panel">
           <h2>Summary</h2>
           <div class="metrics">
@@ -143,8 +144,10 @@
       </div>
 
       <div class="alert info" style="margin-top: 1rem">
-        <strong>CORS:</strong> Many OpenAPI URLs cannot be loaded from a browser.
-        If fetch fails, download the spec from your API docs and upload it here.
+        <strong>CORS:</strong> Many APIs do not allow direct <code>fetch</code> from GitHub Pages.
+        If that happens, this app retries via public CORS relays; if those fail, open your OpenAPI
+        URL in a new tab, save the JSON, and use <strong>Upload OpenAPI JSON</strong>. The durable
+        fix is for the API to send <code>Access-Control-Allow-Origin</code> for your Pages origin.
       </div>
 
       <footer>

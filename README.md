@@ -126,9 +126,13 @@ A static UI in `docs/` runs the same comparison **in the browser** (no server; f
 
 1. Open the published site.
 2. Upload the Postman collection JSON.
-3. Paste an OpenAPI/Swagger JSON URL **or** upload the spec file (many APIs block browser `fetch` via CORS, so upload is often required).
+3. Paste an OpenAPI/Swagger JSON URL **or** upload the spec file. If the API does not send CORS headers, the page falls back to public CORS relays; if those fail, save the spec from the URL and upload it.
 4. Optionally set `{{HOST}}` / `{{HAL_HOST}}` replacements and toggle deprecated endpoints.
 5. Run the report and read the summary and lists.
+
+**Run on localhost (quick check)**
+
+From the repo: `cd docs && python3 -m http.server 8080` then open **http://localhost:8080/**. External OpenAPI URLs are still subject to CORS (same as on GitHub Pages); use upload or the built-in relay if direct fetch fails.
 
 **Host on GitHub (pick one)**
 
