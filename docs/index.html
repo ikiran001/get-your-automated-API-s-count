@@ -17,6 +17,12 @@
 
       <div id="error-banner" class="alert error hidden" role="alert"></div>
 
+      <div class="alert info" style="margin-bottom: 1rem">
+        <strong>GitHub Pages / production:</strong> pasting an OpenAPI URL often shows
+        <em>Failed to fetch</em> until you <strong>upload the JSON file</strong> (most reliable) or pull the
+        latest <code>docs/app.js</code> and hard-refresh (Ctrl+Shift+R). Ad blockers sometimes block CORS relays.
+      </div>
+
       <form id="coverage-form" class="panel" novalidate>
         <h2>Inputs</h2>
 
@@ -154,6 +160,6 @@
         Same rules as <code>api_coverage.py</code>. Deploy the <code>docs/</code> folder with GitHub Pages (see README).
       </footer>
     </main>
-    <script src="app.js"></script>
+    <script src="app.js?v=6"></script>
   </body>
 </html>
