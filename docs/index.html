@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>API automation coverage</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main>
+      <h1>API automation coverage</h1>
+      <p class="subtitle">
+        Compare your OpenAPI/Swagger spec with a Postman collection. All
+        processing runs in your browser; your files are not uploaded to any
+        server.
+      </p>
+
+      <div id="error-banner" class="alert error hidden" role="alert"></div>
+
+      <form id="coverage-form" class="panel" novalidate>
+        <h2>Inputs</h2>
+
+        <label for="collection-file">Postman collection <span class="hint">(JSON, required)</span></label>
+        <input
+          id="collection-file"
+          type="file"
+          accept=".json,application/json"
+          required
+        />
+
+        <label for="swagger-url">OpenAPI / Swagger URL <span class="hint">(optional if you upload spec below)</span></label>
+        <input
+          id="swagger-url"
+          type="url"
+          placeholder="https://api.example.com/openapi.json"
+          autocomplete="off"
+        />
+
+        <label for="swagger-file">Or upload OpenAPI JSON <span class="hint">(use this if the URL is blocked by CORS)</span></label>
+        <input
+          id="swagger-file"
+          type="file"
+          accept=".json,application/json"
+        />
+
+        <div class="panel" style="margin-top: 1rem; margin-bottom: 0; background: var(--bg)">
+          <h2 style="margin-bottom: 0.75rem">Postman URL variables</h2>
+          <label for="host">Replace <code>{{HOST}}</code></label>
+          <input id="host" type="text" placeholder="https://your-api.example.com" autocomplete="off" />
+          <label for="hal-host">Replace <code>{{HAL_HOST}}</code></label>
+          <input id="hal-host" type="text" placeholder="https://optional-second-host.com" autocomplete="off" />
+        </div>
+
+        <div class="row">
+          <label>
+            <input type="checkbox" id="exclude-deprecated" checked />
+            Exclude deprecated operations from Swagger
+          </label>
+        </div>
+
+        <button type="submit" class="primary" id="run-btn">Run coverage report</button>
+      </form>
+
+      <div id="results" class="hidden">
+        <div class="panel">
+          <h2>Summary</h2>
+          <div class="metrics">
+            <div class="metric">
+              <div class="value" id="m-total-apis">0</div>
+              <div class="label">APIs in Swagger</div>
+            </div>
+            <div class="metric">
+              <div class="value" id="m-postman-total">0</div>
+              <div class="label">Requests in collection</div>
+            </div>
+            <div class="metric">
+              <div class="value" id="m-matched">0</div>
+              <div class="label">Matched requests</div>
+            </div>
+            <div class="metric">
+              <div class="value warn" id="m-unmatched">0</div>
+              <div class="label">Not in Swagger</div>
+            </div>
+            <div class="metric">
+              <div class="value" id="m-unique-auto">0</div>
+              <div class="label">Unique automated APIs</div>
+            </div>
+            <div class="metric">
+              <div class="value warn" id="m-missing">0</div>
+              <div class="label">Swagger APIs not covered</div>
+            </div>
+            <div class="metric">
+              <div class="value" id="m-coverage">0%</div>
+              <div class="label">Automation coverage</div>
+            </div>
+            <div class="metric">
+              <div class="value warn" id="m-remaining-pct">0%</div>
+              <div class="label">Remaining (of Swagger)</div>
+            </div>
+          </div>
+
+          <table class="summary">
+            <thead>
+              <tr>
+                <th>Metric</th>
+                <th>Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Total APIs from Swagger</td>
+                <td id="t-total-apis">—</td>
+              </tr>
+              <tr>
+                <td>Total requests in Postman</td>
+                <td id="t-postman">—</td>
+              </tr>
+              <tr>
+                <td>Matched to Swagger</td>
+                <td id="t-matched">—</td>
+              </tr>
+              <tr>
+                <td>Postman requests not in Swagger</td>
+                <td id="t-unmatched">—</td>
+              </tr>
+              <tr>
+                <td>Swagger endpoints not automated</td>
+                <td id="t-missing">—</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h2 style="margin-top: 1.25rem">Details</h2>
+          <div class="tabs">
+            <button type="button" data-tab="automated" class="active">Matched requests</button>
+            <button type="button" data-tab="missing">Missing from automation</button>
+            <button type="button" data-tab="unmatched">Not in Swagger</button>
+          </div>
+          <div class="list-panel">
+            <pre id="list-content"></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="alert info" style="margin-top: 1rem">
+        <strong>CORS:</strong> Many OpenAPI URLs cannot be loaded from a browser.
+        If fetch fails, download the spec from your API docs and upload it here.
+      </div>
+
+      <footer>
+        Same rules as <code>api_coverage.py</code>. Deploy the <code>docs/</code> folder with GitHub Pages (see README).
+      </footer>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>

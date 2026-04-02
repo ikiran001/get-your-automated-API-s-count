@@ -118,4 +118,23 @@ python3 api_coverage.py <swagger_url> <stash_raw_url>
 
 ---
 
+## 8) Web app (GitHub Pages)
+
+A static UI in `docs/` runs the same comparison **in the browser** (no server; files stay on the user’s machine).
+
+**What users do**
+
+1. Open the published site.
+2. Upload the Postman collection JSON.
+3. Paste an OpenAPI/Swagger JSON URL **or** upload the spec file (many APIs block browser `fetch` via CORS, so upload is often required).
+4. Optionally set `{{HOST}}` / `{{HAL_HOST}}` replacements and toggle deprecated endpoints.
+5. Run the report and read the summary and lists.
+
+**Host on GitHub (pick one)**
+
+- **Branch `/docs`:** Repository → **Settings** → **Pages** → **Build and deployment** → Source: **Deploy from a branch** → Branch `main`, folder **`/docs`**, Save. The site URL will be `https://<user>.github.io/<repo>/`.
+- **GitHub Actions:** Source: **GitHub Actions**. Pushes to `main` run `.github/workflows/deploy-pages.yml`, which publishes the `docs/` folder.
+
+---
+
 That’s it. If you want a CSV report or folder‑wise breakdown, let me know.
