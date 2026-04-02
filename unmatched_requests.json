@@ -1,0 +1,22 @@
+[
+  [
+    "POST",
+    "/hal/addon_add/{brand}"
+  ],
+  [
+    "GET",
+    "/v2/sites/345105/security/sitelock"
+  ],
+  [
+    "GET",
+    "/v1/sites/{site_id}/users"
+  ],
+  [
+    "GET",
+    "/v2/sites"
+  ],
+  [
+    "POST",
+    "/hal/addon_decom/{brand}"
+  ]
+]
