@@ -107,6 +107,23 @@
     setListSectionTitle();
   }
 
+  function applyCoverageHeat(n) {
+    var fill = document.getElementById("coverage-progress-fill");
+    var cov = document.getElementById("m-coverage");
+    var heatFill = "heat-low";
+    if (n >= 70) heatFill = "heat-high";
+    else if (n >= 40) heatFill = "heat-mid";
+    if (fill) {
+      fill.classList.remove("heat-low", "heat-mid", "heat-high");
+      fill.classList.add(heatFill);
+    }
+    if (cov) {
+      cov.classList.remove("coverage-heat-mid", "coverage-heat-high");
+      if (n >= 70) cov.classList.add("coverage-heat-high");
+      else if (n >= 40) cov.classList.add("coverage-heat-mid");
+    }
+  }
+
   function syncProgressBar() {
     var cov = document.getElementById("m-coverage");
     var fill = document.getElementById("coverage-progress-fill");
@@ -118,6 +135,7 @@
     if (isNaN(n)) n = 0;
     n = Math.max(0, Math.min(100, n));
     fill.style.width = n + "%";
+    applyCoverageHeat(n);
     if (label) label.textContent = cov.textContent.trim();
     if (bar) bar.setAttribute("aria-valuenow", String(Math.round(n)));
   }
@@ -263,7 +281,19 @@
     swaggerPanel.classList.toggle("panel-input-ready", ready);
     postmanPanel.classList.toggle("panel-input-ready", ready);
 
+    syncStepHighlight(swaggerOk, hasCollection, urlInvalid, ready);
     syncEmptyState();
+  }
+
+  function syncStepHighlight(swaggerOk, hasCollection, urlInvalid, ready) {
+    document.querySelectorAll("[data-step-card]").forEach(function (el) {
+      el.classList.remove("step-card--active");
+    });
+    var step = "1";
+    if (ready) step = "3";
+    else if (swaggerOk && !urlInvalid) step = "2";
+    var card = document.querySelector('[data-step-card="' + step + '"]');
+    if (card) card.classList.add("step-card--active");
   }
 
   function wireCoverageInputPanels() {
@@ -297,7 +327,7 @@
     var pct = d.coveragePct.toFixed(2);
     var remPct = d.remainingPct.toFixed(2);
     var lines = [
-      "# API coverage report",
+      "# TestLens — API coverage report",
       "",
       "Generated: " + d.generatedAt,
       "",

@@ -404,6 +404,51 @@ function setCompareButtonLoading(loading) {
   }
 }
 
+function easeOutCubic(t) {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+function prefersReducedMotion() {
+  return (
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
+/** Count-up coverage % and progress bar width; heat colors follow via ui.js observer. */
+function animateCoverageTo(targetPct) {
+  const cov = els.mCoverage;
+  const label = document.getElementById("coverage-progress-label");
+  const fill = document.getElementById("coverage-progress-fill");
+  if (!cov || typeof targetPct !== "number" || Number.isNaN(targetPct)) return;
+  const end = Math.max(0, Math.min(100, targetPct));
+  if (prefersReducedMotion()) {
+    cov.textContent = end.toFixed(2) + "%";
+    if (fill) fill.style.width = end + "%";
+    if (label) label.textContent = cov.textContent.trim();
+    return;
+  }
+  cov.textContent = "0.00%";
+  if (fill) fill.style.width = "0%";
+  if (label) label.textContent = "0%";
+  const start = performance.now();
+  const duration = 950;
+  function tick(now) {
+    const u = Math.min(1, (now - start) / duration);
+    const v = end * easeOutCubic(u);
+    cov.textContent = v.toFixed(2) + "%";
+    if (fill) fill.style.width = v + "%";
+    if (label) label.textContent = v.toFixed(2) + "%";
+    if (u < 1) requestAnimationFrame(tick);
+    else {
+      cov.textContent = end.toFixed(2) + "%";
+      if (fill) fill.style.width = end + "%";
+      if (label) label.textContent = end.toFixed(2) + "%";
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
 function setActiveTab(name) {
   els.tabBtns.forEach((b) => {
     b.classList.toggle("active", b.getAttribute("data-tab") === name);
@@ -499,7 +544,7 @@ els.form.addEventListener("submit", async (e) => {
     els.mUnmatched.textContent = r.unmatchedCount;
     els.mUniqueAuto.textContent = r.uniqueAutomated;
     els.mMissing.textContent = r.remaining;
-    els.mCoverage.textContent = r.coveragePct.toFixed(2) + "%";
+    els.mCoverage.textContent = "0.00%";
     els.mRemainingPct.textContent = r.remainingPct.toFixed(2) + "%";
 
     els.tTotalApis.textContent = String(r.totalApis);
@@ -515,6 +560,7 @@ els.form.addEventListener("submit", async (e) => {
     };
     setActiveTab("automated");
     els.results.classList.remove("hidden");
+    animateCoverageTo(r.coveragePct);
 
     requestAnimationFrame(function () {
       var reduce =

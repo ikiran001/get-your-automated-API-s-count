@@ -1,5 +1,15 @@
 /* UI layer — dark theme. Parsing/comparison in app.js (unchanged). */
 
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 :root {
   --bg-primary: #0b0f1a;
   --bg-secondary: #111827;
@@ -19,11 +29,10 @@ body.app-shell {
   position: relative;
   isolation: isolate;
   background-color: var(--bg-primary);
-  background-image: radial-gradient(
-    circle at top,
-    rgba(99, 102, 241, 0.15),
-    transparent 40%
-  );
+  background-image:
+    radial-gradient(ellipse 120% 70% at 50% -25%, rgba(99, 102, 241, 0.22), transparent 50%),
+    radial-gradient(circle at 85% 15%, rgba(139, 92, 246, 0.12), transparent 42%),
+    radial-gradient(circle at 10% 40%, rgba(59, 130, 246, 0.08), transparent 38%);
   background-attachment: fixed;
 }
 
@@ -34,6 +43,21 @@ body.app-shell {
 
   .results-panel:not(.hidden) {
     animation: none;
+  }
+
+  .btn-interactive:hover:not(:disabled),
+  .btn-interactive:active:not(:disabled),
+  .hero-cta:active {
+    transform: none;
+  }
+
+  .metric-card-glass:hover,
+  .step-card-premium:hover {
+    transform: none;
+  }
+
+  .coverage-progress-fill {
+    transition: background 0.2s ease, box-shadow 0.2s ease;
   }
 }
 
@@ -68,10 +92,158 @@ body.app-shell::after {
   z-index: 0;
   pointer-events: none;
   background: radial-gradient(
-    ellipse 100% 80% at 50% -30%,
-    rgba(139, 92, 246, 0.08),
-    transparent 55%
+    ellipse 100% 70% at 50% -35%,
+    rgba(139, 92, 246, 0.14),
+    transparent 58%
   );
+}
+
+.main-glass {
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 0 60px rgba(99, 102, 241, 0.08);
+}
+
+.hero-band {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+}
+
+.form-glass {
+  box-shadow:
+    0 0 48px rgba(99, 102, 241, 0.12),
+    0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+}
+
+.results-panel-glass {
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+}
+
+.btn-interactive {
+  transform: translateZ(0);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.btn-interactive:hover:not(:disabled) {
+  transform: scale(1.02);
+}
+
+.btn-interactive:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.hero-cta:active {
+  transform: scale(0.97);
+}
+
+.metric-card-glass {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.metric-card-glass:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.35),
+    0 0 32px rgba(99, 102, 241, 0.12);
+}
+
+.step-card-premium {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.step-card-premium:hover {
+  transform: scale(1.02) translateY(-1px);
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.3),
+    0 0 24px rgba(99, 102, 241, 0.2);
+}
+
+.step-card-premium.step-card--active {
+  border-color: rgba(99, 102, 241, 0.55);
+  background: linear-gradient(
+    145deg,
+    rgba(99, 102, 241, 0.12) 0%,
+    rgba(17, 24, 39, 0.95) 55%
+  );
+  box-shadow:
+    0 0 0 1px rgba(99, 102, 241, 0.25),
+    0 8px 32px rgba(99, 102, 241, 0.18);
+}
+
+.step-card-premium.step-card--active .step-card-icon {
+  color: #c7d2fe;
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.25);
+}
+
+.upload-drop-zone--large {
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.25s ease,
+    transform 0.2s ease;
+}
+
+.upload-drop-zone--large:hover {
+  box-shadow:
+    0 0 0 1px rgba(99, 102, 241, 0.35),
+    0 0 36px rgba(99, 102, 241, 0.2);
+}
+
+#collection-drop-zone.upload-drop-zone--large:hover {
+  box-shadow:
+    0 0 0 1px rgba(139, 92, 246, 0.4),
+    0 0 36px rgba(139, 92, 246, 0.22);
+}
+
+.coverage-pct-value {
+  transition: color 0.35s ease;
+  color: #f87171;
+}
+
+.coverage-pct-value.coverage-heat-mid {
+  color: #fbbf24;
+}
+
+.coverage-pct-value.coverage-heat-high {
+  color: #4ade80;
+}
+
+.coverage-progress-fill {
+  width: 0%;
+  transition:
+    width 0.08s linear,
+    background 0.45s ease,
+    box-shadow 0.45s ease;
+}
+
+.coverage-progress-fill.heat-low {
+  background: linear-gradient(90deg, #dc2626, #f97316) !important;
+  box-shadow: 0 0 18px rgba(239, 68, 68, 0.45);
+}
+
+.coverage-progress-fill.heat-mid {
+  background: linear-gradient(90deg, #eab308, #f59e0b) !important;
+  box-shadow: 0 0 18px rgba(245, 158, 11, 0.4);
+}
+
+.coverage-progress-fill.heat-high {
+  background: linear-gradient(90deg, #16a34a, #4ade80) !important;
+  box-shadow: 0 0 18px rgba(34, 197, 94, 0.4);
 }
 
 /* Smooth transitions for interactive UI (does not touch script logic) */
@@ -82,6 +254,7 @@ body.app-shell main select,
 body.app-shell main summary,
 body.app-shell main .upload-drop-zone,
 body.app-shell main .step-card,
+body.app-shell main .step-card-premium,
 body.app-shell main .metric-card,
 body.app-shell main .tabs button,
 body.app-shell main details summary span {
@@ -221,11 +394,6 @@ body.app-shell main details summary span {
 #collection-drop-zone.is-dragover {
   border-color: var(--accent-purple) !important;
   background-color: rgba(139, 92, 246, 0.12) !important;
-}
-
-.coverage-progress-fill {
-  transition: width 0.5s ease;
-  background: linear-gradient(90deg, #6366f1, #8b5cf6) !important;
 }
 
 .results-panel:not(.hidden) {
