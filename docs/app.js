@@ -19,6 +19,21 @@ function normalizePath(path) {
   return p;
 }
 
+/** True if URL looks like a JSON OpenAPI endpoint (path ends with .json or ?format=json). */
+function openApiUrlLooksLikeJson(urlTrim) {
+  if (!urlTrim) return false;
+  try {
+    const u = new URL(urlTrim);
+    const path = u.pathname.toLowerCase();
+    if (path.endsWith(".json")) return true;
+    const fmt = u.searchParams.get("format");
+    if (fmt && String(fmt).toLowerCase() === "json") return true;
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 function parseRequestUrl(request, host, halHost) {
   const urlField = request.url;
   let rawUrl = "";
@@ -370,6 +385,25 @@ function clearError() {
   els.error.classList.add("hidden");
 }
 
+function setCompareButtonLoading(loading) {
+  const btn = els.runBtn;
+  if (!btn) return;
+  const label = btn.querySelector(".run-btn-label");
+  const pending = btn.querySelector(".run-btn-loading");
+  if (!label || !pending) return;
+  if (loading) {
+    label.classList.add("hidden");
+    pending.classList.remove("hidden");
+    pending.classList.add("flex");
+    btn.setAttribute("aria-busy", "true");
+  } else {
+    label.classList.remove("hidden");
+    pending.classList.add("hidden");
+    pending.classList.remove("flex");
+    btn.removeAttribute("aria-busy");
+  }
+}
+
 function setActiveTab(name) {
   els.tabBtns.forEach((b) => {
     b.classList.toggle("active", b.getAttribute("data-tab") === name);
@@ -403,12 +437,27 @@ els.form.addEventListener("submit", async (e) => {
     return;
   }
 
+  const swaggerF = els.swaggerFile.files;
+  const urlTrim = els.swaggerUrl.value.trim();
+  if (!swaggerF || !swaggerF.length) {
+    if (!urlTrim) {
+      showError("Provide an OpenAPI JSON file or a spec URL.");
+      return;
+    }
+    if (!openApiUrlLooksLikeJson(urlTrim)) {
+      showError(
+        "OpenAPI URL must end with .json (e.g. .../openapi.json) or use ?format=json. Or upload a spec file."
+      );
+      return;
+    }
+  }
+
   els.runBtn.disabled = true;
+  setCompareButtonLoading(true);
   try {
     const collection = await readJsonFile(collFiles[0]);
     let openapi = null;
 
-    const swaggerF = els.swaggerFile.files;
     if (swaggerF && swaggerF.length) {
       openapi = await readJsonFile(swaggerF[0]);
     } else {
@@ -435,9 +484,10 @@ els.form.addEventListener("submit", async (e) => {
       return;
     }
 
+    // Postman URL variables ({{HOST}} / {{HAL_HOST}}) inputs removed from UI; default empty.
     const options = {
-      host: els.host.value.trim(),
-      halHost: els.halHost.value.trim(),
+      host: els.host ? els.host.value.trim() : "",
+      halHost: els.halHost ? els.halHost.value.trim() : "",
       excludeDeprecated: els.excludeDeprecated.checked,
     };
 
@@ -465,9 +515,39 @@ els.form.addEventListener("submit", async (e) => {
     };
     setActiveTab("automated");
     els.results.classList.remove("hidden");
+
+    requestAnimationFrame(function () {
+      var reduce =
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      els.results.scrollIntoView({
+        behavior: reduce ? "auto" : "smooth",
+        block: "start",
+      });
+    });
+
+    window.dispatchEvent(
+      new CustomEvent("api-coverage-report", {
+        detail: {
+          generatedAt: new Date().toISOString(),
+          totalApis: r.totalApis,
+          postmanRequestsTotal: r.postmanRequestsTotal,
+          matchedRequestCount: r.matchedRequestCount,
+          unmatchedCount: r.unmatchedCount,
+          uniqueAutomated: r.uniqueAutomated,
+          remaining: r.remaining,
+          coveragePct: r.coveragePct,
+          remainingPct: r.remainingPct,
+          matchedText: formatEndpointList(r.matchedRequests),
+          missingText: formatEndpointList(r.missingApis),
+          unmatchedText: formatEndpointList(r.unmatchedRequests),
+        },
+      })
+    );
   } catch (err) {
     showError(err.message || String(err));
   } finally {
+    setCompareButtonLoading(false);
     els.runBtn.disabled = false;
   }
 });

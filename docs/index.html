@@ -4,162 +4,845 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>API automation coverage</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ["Inter", "system-ui", "sans-serif"] },
+          },
+        },
+      };
+    </script>
+    <link rel="stylesheet" href="styles.css?v=5" />
   </head>
-  <body>
-    <main>
-      <h1>API automation coverage</h1>
-      <p class="subtitle">
-        Compare your OpenAPI/Swagger spec with a Postman collection. All
-        processing runs in your browser; your files are not uploaded to any
-        server.
-      </p>
+  <body
+    class="app-shell min-h-screen font-sans text-[#e5e7eb] antialiased"
+  >
+    <main
+      class="relative z-10 mx-auto my-4 max-w-6xl rounded-2xl border border-[#1f2937] bg-[#0f172a] px-4 pb-10 pt-6 shadow-[0_10px_30px_rgba(0,0,0,0.4),0_0_40px_rgba(99,102,241,0.12)] backdrop-blur-sm sm:px-6 lg:px-10"
+    >
+      <!-- Get started: hero + steps -->
+      <div
+        class="mb-6 rounded-2xl border border-[#1f2937]/90 bg-[#0f172a]/60 p-4 sm:p-6"
+      >
+      <header class="mb-5 text-center lg:text-left lg:max-w-4xl">
+        <h1
+          class="text-balance text-2xl font-bold tracking-tight text-[#e5e7eb] sm:text-3xl"
+        >
+          Know Your
+          <span class="text-gradient-brand">API Test Coverage</span>
+          in
+          <span class="text-gradient-brand">Seconds</span>
+          🚀
+        </h1>
+        <p
+          class="mx-auto mt-2 max-w-2xl text-base leading-relaxed text-[#9ca3af] lg:mx-0"
+        >
+          Upload Swagger + Postman → Instantly see what's tested &amp; what's
+          missing
+        </p>
+      </header>
 
-      <div id="error-banner" class="alert error hidden" role="alert"></div>
-
-      <div class="alert info" style="margin-bottom: 1rem">
-        <strong>GitHub Pages / production:</strong> pasting an OpenAPI URL often shows
-        <em>Failed to fetch</em> until you <strong>upload the JSON file</strong> (most reliable) or pull the
-        latest <code>docs/app.js</code> and hard-refresh (Ctrl+Shift+R). Ad blockers sometimes block CORS relays.
+      <!-- Steps (compact) -->
+      <section
+        class="mb-4 grid grid-cols-3 gap-2 sm:gap-3"
+        aria-label="How it works"
+      >
+        <div
+          class="step-card flex flex-col items-center rounded-xl border border-[#1f2937] bg-[#111827] px-2 py-3 text-center shadow-sm sm:flex-row sm:justify-center sm:gap-2 sm:py-2.5 sm:pl-3 sm:pr-4 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(99,102,241,0.15)]"
+        >
+          <div
+            class="mb-1.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] text-xs font-bold text-white sm:mb-0"
+          >
+            1
+          </div>
+          <div class="min-w-0 sm:text-left">
+            <p class="text-xs font-semibold leading-tight text-[#e5e7eb]">
+              Swagger
+            </p>
+            <p class="text-[10px] leading-tight text-[#9ca3af] sm:text-[11px]">
+              File or URL
+            </p>
+          </div>
+        </div>
+        <div
+          class="step-card flex flex-col items-center rounded-xl border border-[#1f2937] bg-[#111827] px-2 py-3 text-center shadow-sm sm:flex-row sm:justify-center sm:gap-2 sm:py-2.5 sm:pl-3 sm:pr-4 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(99,102,241,0.15)]"
+        >
+          <div
+            class="mb-1.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] text-xs font-bold text-white sm:mb-0"
+          >
+            2
+          </div>
+          <div class="min-w-0 sm:text-left">
+            <p class="text-xs font-semibold leading-tight text-[#e5e7eb]">
+              Postman
+            </p>
+            <p class="text-[10px] leading-tight text-[#9ca3af] sm:text-[11px]">
+              Collection JSON
+            </p>
+          </div>
+        </div>
+        <div
+          class="step-card flex flex-col items-center rounded-xl border border-[#1f2937] bg-[#111827] px-2 py-3 text-center shadow-sm sm:flex-row sm:justify-center sm:gap-2 sm:py-2.5 sm:pl-3 sm:pr-4 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(99,102,241,0.15)]"
+        >
+          <div
+            class="mb-1.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] text-xs font-bold text-white sm:mb-0"
+          >
+            3
+          </div>
+          <div class="min-w-0 sm:text-left">
+            <p class="text-xs font-semibold leading-tight text-[#e5e7eb]">
+              Compare
+            </p>
+            <p class="text-[10px] leading-tight text-[#9ca3af] sm:text-[11px]">
+              Run report
+            </p>
+          </div>
+        </div>
+      </section>
       </div>
 
-      <form id="coverage-form" class="panel" novalidate>
-        <h2>Inputs</h2>
+      <!-- Empty state (slim; ui.js toggles vs #results & input activity) -->
+      <div
+        id="empty-state"
+        class="empty-state-visible mb-4 rounded-xl border border-dashed border-[#334155]/90 bg-[#111827]/80 px-4 py-3 text-center shadow-inner"
+      >
+        <p class="text-sm font-medium text-[#e5e7eb]">
+          Upload your files to analyze API coverage
+        </p>
+        <p class="mt-0.5 text-xs text-[#9ca3af]">
+          All processing runs in your browser — nothing is uploaded to a server.
+        </p>
+      </div>
 
-        <label for="collection-file">Postman collection <span class="hint">(JSON, required)</span></label>
-        <input
-          id="collection-file"
-          type="file"
-          accept=".json,application/json"
-          required
-        />
+      <div
+        id="error-banner"
+        class="alert error mb-4 hidden rounded-xl border border-[#ef4444]/40 bg-[#ef4444]/10 px-4 py-2.5 text-sm text-red-200"
+        role="alert"
+      ></div>
 
-        <label for="swagger-url">OpenAPI / Swagger URL <span class="hint">(optional if you upload spec below)</span></label>
-        <input
-          id="swagger-url"
-          type="url"
-          placeholder="https://api.example.com/openapi.json"
-          autocomplete="off"
-        />
+      <!-- Tips collapsed by default to shorten the fold (same copy as former banners + footer CORS). -->
+      <div class="mb-4 space-y-2">
+        <details
+          class="rounded-xl border border-[#1f2937] bg-[#111827] px-3 py-2 text-sm text-[#9ca3af] shadow-sm open:pb-3"
+        >
+          <summary
+            class="cursor-pointer list-none font-medium text-[#e5e7eb] marker:hidden [&::-webkit-details-marker]:hidden"
+          >
+            <span class="layout-tip-chevron inline-block text-[#a5b4fc] transition-transform duration-200"
+              >▸</span
+            >
+            GitHub Pages &amp; OpenAPI URLs
+          </summary>
+          <p class="mt-2 border-t border-[#1f2937] pt-2 text-xs leading-relaxed">
+            Pasting an OpenAPI URL may fail until you
+            <strong class="text-[#c7d2fe]">upload the JSON file</strong> (most
+            reliable) or hard-refresh after updates. Ad blockers can block CORS
+            relays.
+          </p>
+        </details>
+        <details
+          class="rounded-xl border border-[#1f2937] bg-[#111827] px-3 py-2 text-sm text-[#9ca3af] shadow-sm open:pb-3"
+        >
+          <summary
+            class="cursor-pointer list-none font-medium text-[#e5e7eb] marker:hidden [&::-webkit-details-marker]:hidden"
+          >
+            <span class="layout-tip-chevron inline-block text-[#a5b4fc] transition-transform duration-200"
+              >▸</span
+            >
+            CORS &amp; <code class="text-[#c7d2fe]">fetch</code>
+          </summary>
+          <p class="mt-2 border-t border-[#1f2937] pt-2 text-xs leading-relaxed">
+            Many APIs block direct
+            <code class="rounded bg-[#0f172a] px-1 text-[#c7d2fe]">fetch</code>
+            from GitHub Pages. This app retries via public relays; if that
+            fails, save the OpenAPI JSON and upload it. The durable fix is
+            <code class="rounded bg-[#0f172a] px-1 text-[#c7d2fe]"
+              >Access-Control-Allow-Origin</code
+            >
+            on the spec URL.
+          </p>
+        </details>
+      </div>
 
-        <label for="swagger-file">Or upload OpenAPI JSON <span class="hint">(use this if the URL is blocked by CORS)</span></label>
-        <input
-          id="swagger-file"
-          type="file"
-          accept=".json,application/json"
-        />
-
-        <div class="panel" style="margin-top: 1rem; margin-bottom: 0; background: var(--bg)">
-          <h2 style="margin-bottom: 0.75rem">Postman URL variables</h2>
-          <label for="host">Replace <code>{{HOST}}</code></label>
-          <input id="host" type="text" placeholder="https://your-api.example.com" autocomplete="off" />
-          <label for="hal-host">Replace <code>{{HAL_HOST}}</code></label>
-          <input id="hal-host" type="text" placeholder="https://optional-second-host.com" autocomplete="off" />
+      <form
+        id="coverage-form"
+        class="rounded-2xl border border-[#1f2937] bg-[#111827] p-4 shadow-[0_0_40px_rgba(99,102,241,0.08)] sm:p-6"
+        novalidate
+      >
+        <div class="mb-4">
+          <h2 class="text-base font-semibold text-[#e5e7eb] sm:text-lg">
+            Run analysis
+          </h2>
+          <p class="mt-1 text-xs text-[#9ca3af] sm:text-sm">
+            Add your OpenAPI spec (URL or file) and Postman collection, then
+            compare.
+          </p>
         </div>
 
-        <div class="row">
-          <label>
-            <input type="checkbox" id="exclude-deprecated" checked />
+        <div
+          class="mb-4 grid gap-4 lg:grid-cols-2 lg:gap-6 lg:items-start"
+        >
+        <!-- OpenAPI / Swagger: URL (primary) OR file -->
+        <div
+          id="swagger-source-panel"
+          class="swagger-source-shell min-w-0 space-y-3 rounded-xl border-2 border-transparent p-2 transition-[border-color,box-shadow,background-color] duration-200 sm:p-3"
+        >
+          <p
+            class="text-xs font-semibold uppercase tracking-wide text-[#9ca3af]"
+          >
+            OpenAPI / Swagger
+          </p>
+          <div id="swagger-url-field-wrap" class="rounded-xl">
+            <label
+              for="swagger-url"
+              class="mb-1.5 block text-sm font-medium text-[#e5e7eb]"
+            >
+              Paste spec URL
+              <span class="font-normal text-[#6366f1]">· recommended</span>
+            </label>
+            <input
+              id="swagger-url"
+              type="url"
+              placeholder="https://api.example.com/openapi.json"
+              autocomplete="off"
+              class="swagger-url-input w-full rounded-xl border border-[#6366f1]/35 bg-[#0f172a] px-3 py-2.5 text-sm text-[#e5e7eb] shadow-inner ring-1 ring-[#6366f1]/20 placeholder:text-[#6b7280] focus:border-[#6366f1] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/35"
+            />
+            <p
+              id="swagger-url-error"
+              class="mt-1.5 hidden text-xs font-medium leading-relaxed text-red-300"
+              role="alert"
+            ></p>
+            <p class="mt-1.5 text-xs leading-relaxed text-[#6b7280]">
+              Must end with
+              <code class="text-[#9ca3af]">.json</code>
+              or use
+              <code class="text-[#9ca3af]">?format=json</code>. If CORS blocks
+              the request, upload the file below.
+            </p>
+          </div>
+
+          <div
+            class="flex items-center gap-3 py-0.5"
+            role="separator"
+            aria-label="Or use file upload"
+          >
+            <span class="h-px flex-1 bg-[#1f2937]"></span>
+            <span
+              class="shrink-0 rounded-full border border-[#374151] bg-[#0f172a] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#9ca3af]"
+              >or</span
+            >
+            <span class="h-px flex-1 bg-[#1f2937]"></span>
+          </div>
+
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-[#9ca3af]"
+              >Upload JSON file instead</label
+            >
+            <p class="mb-2 text-xs text-[#6b7280]">
+              Skip the URL if you already have
+              <code class="rounded bg-[#0f172a] px-1 text-[#9ca3af]">openapi.json</code>
+              on disk.
+            </p>
+            <div
+              id="swagger-drop-zone"
+              class="upload-drop-zone group relative flex min-h-[88px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#334155] bg-[#0f172a] px-3 py-3 hover:border-[#6366f1] hover:bg-[rgba(99,102,241,0.05)]"
+            >
+              <input
+                id="swagger-file"
+                type="file"
+                accept=".json,application/json"
+                class="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+              />
+              <svg
+                class="mb-1 h-8 w-8 text-[#9ca3af] transition-colors group-hover:text-[#6366f1]"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.5"
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                />
+              </svg>
+              <span class="text-center text-xs font-medium text-[#9ca3af] sm:text-sm"
+                >Drag &amp; drop or click — OpenAPI / Swagger JSON</span
+              >
+              <span
+                id="swagger-file-name"
+                class="mt-1 max-w-full truncate text-xs text-[#818cf8]"
+              ></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upload Postman -->
+        <div
+          id="postman-source-panel"
+          class="postman-source-shell min-w-0 rounded-xl border-2 border-transparent p-2 transition-[border-color,box-shadow,background-color] duration-200 sm:p-3"
+        >
+          <label class="mb-1.5 block text-sm font-medium text-[#9ca3af]"
+            >Upload Postman Collection</label
+          >
+          <p class="mb-2 text-xs text-[#6b7280]">
+            Required. Export your collection as JSON from Postman.
+          </p>
+          <div
+            id="collection-drop-zone"
+            class="upload-drop-zone group relative flex min-h-[92px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#334155] bg-[#0f172a] px-3 py-4 hover:border-[#8b5cf6] hover:bg-[rgba(139,92,246,0.05)]"
+          >
+            <input
+              id="collection-file"
+              type="file"
+              accept=".json,application/json"
+              required
+              class="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+            />
+            <svg
+              class="mb-1.5 h-8 w-8 text-[#9ca3af] transition-colors group-hover:text-[#8b5cf6]"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+              />
+            </svg>
+            <span class="text-center text-xs font-medium text-[#9ca3af] sm:text-sm"
+              >Drag &amp; drop or click — collection JSON (required)</span
+            >
+            <span
+              id="collection-file-name"
+              class="mt-1.5 max-w-full truncate text-xs text-[#a78bfa]"
+            ></span>
+          </div>
+        </div>
+        </div>
+
+        <!-- Advanced: above Compare so users see it before running -->
+        <details
+          id="advanced-coverage-details"
+          class="advanced-details mt-6 rounded-xl border border-[#1f2937] border-l-4 border-l-amber-500/55 bg-[#0f172a] text-sm shadow-sm open:pb-1"
+        >
+          <summary
+            class="cursor-pointer list-none px-4 py-3 font-semibold text-[#e5e7eb] marker:hidden sm:px-5 sm:py-3.5 [&::-webkit-details-marker]:hidden"
+          >
+            <span
+              class="advanced-chevron mr-2 inline-block text-[#a5b4fc] transition-transform duration-200"
+              >▸</span
+            >
+            <span class="text-[#fcd34d]">Important:</span>
+            parameter matching &amp; optional mappings
+          </summary>
+          <div
+            class="space-y-4 border-t border-[#1f2937] px-3 pb-4 pt-4 sm:px-4"
+          >
+            <p class="text-sm font-medium leading-relaxed text-[#fde68a]">
+              If Swagger and Postman use
+              <strong class="text-amber-100">different path parameter names</strong>
+              for the same endpoint, coverage can look wrong unless you
+              understand how matching works — or add explicit mappings below.
+            </p>
+            <p class="text-xs leading-relaxed text-[#9ca3af]">
+              Open this section for the full rules, examples, and optional
+              Swagger ↔ Postman name maps. You can still run Compare without
+              opening it when your path templates already align.
+            </p>
+            <div
+              class="grid gap-4 xl:grid-cols-2 xl:gap-6 xl:items-start"
+            >
+        <section
+          class="rounded-2xl border border-[#1f2937] bg-[#0f172a] p-4 shadow-sm sm:p-5"
+          aria-labelledby="param-matching-heading"
+        >
+          <div class="mb-3 flex flex-wrap items-center gap-2">
+            <h2
+              id="param-matching-heading"
+              class="text-base font-semibold text-[#e5e7eb] sm:text-lg"
+            >
+              How Parameter Matching Works
+            </h2>
+            <span
+              class="inline-flex h-6 min-w-[1.5rem] cursor-help items-center justify-center rounded-full border border-[#6366f1]/35 bg-[#6366f1]/10 px-1.5 text-xs font-semibold text-[#a5b4fc]"
+              title="All path parameters are normalized to {param} before comparison."
+              tabindex="0"
+              role="note"
+              aria-label="All path parameters are normalized to {param} before comparison."
+              >?</span
+            >
+          </div>
+
+          <p class="text-sm font-medium leading-relaxed text-[#c7d2fe]">
+            This tool automatically normalizes path parameters and also allows
+            optional manual mapping below for advanced use cases.
+          </p>
+
+          <p class="mt-4 text-sm leading-relaxed text-[#9ca3af]">
+            Path parameters in Swagger and Postman may have different names, but
+            represent dynamic values.
+          </p>
+          <p class="mt-3 text-sm leading-relaxed text-[#9ca3af]">
+            This tool normalizes
+            <strong class="font-semibold text-[#e5e7eb]">ALL</strong> path
+            parameters by replacing any
+            <code class="rounded bg-[#0f172a] px-1 py-0.5 font-mono text-[#c7d2fe]"
+              >{parameter_name}</code
+            >
+            with a standard placeholder
+            <code class="rounded bg-[#0f172a] px-1 py-0.5 font-mono text-[#c7d2fe]"
+              >{param}</code
+            >.
+          </p>
+
+          <div
+            class="mt-4 rounded-xl border border-[#1f2937] bg-[#111827] p-3 sm:p-4"
+            role="region"
+            aria-label="Multi-parameter normalization example"
+          >
+            <p class="mb-3 text-xs font-semibold uppercase tracking-wide text-[#9ca3af]">
+              Example: multiple path parameters
+            </p>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <p class="param-explain-label">Swagger</p>
+                <code class="param-explain-path"
+                  >GET /v1/sites/{site_id}/domains/{domain_id}/records/{record_id}</code
+                >
+              </div>
+              <div>
+                <p class="param-explain-label">Postman</p>
+                <code class="param-explain-path"
+                  >GET /v1/sites/{id}/domains/{dom_id}/records/{recId}</code
+                >
+              </div>
+            </div>
+            <p class="param-explain-divider">↓ Normalization ↓</p>
+            <div>
+              <p class="param-explain-label">Both become</p>
+              <code class="param-explain-path"
+                >/v1/sites/{param}/domains/{param}/records/{param}</code
+              >
+            </div>
+            <p class="param-explain-match" role="status">
+              <span aria-hidden="true">✅</span> Treated as MATCH
+            </p>
+          </div>
+
+          <div class="mt-4 border-t border-[#1f2937] pt-4">
+            <p class="text-sm font-semibold text-[#e5e7eb]">
+              Matching is based on:
+            </p>
+            <ul class="mt-2 list-inside list-disc space-y-1.5 text-sm text-[#9ca3af]">
+              <li>HTTP method (GET, POST, etc.)</li>
+              <li>Path structure</li>
+              <li>Number and position of parameters</li>
+            </ul>
+            <p class="mt-3 text-sm font-medium text-[#c7d2fe]">
+              Parameter names are ignored during comparison.
+            </p>
+          </div>
+
+          <div class="mt-4 border-t border-[#1f2937] pt-4">
+            <p class="text-sm font-semibold text-[#e5e7eb]">Edge case</p>
+            <p class="mt-2 text-sm leading-relaxed text-[#9ca3af]">
+              If the number or position of parameters differs, endpoints will
+              <strong class="font-semibold text-[#fca5a5]">NOT</strong> match.
+            </p>
+            <div class="mt-3 space-y-2">
+              <code class="param-explain-path"
+                >/v1/sites/{param}/domains</code
+              >
+              <p class="param-explain-divider">≠</p>
+              <code class="param-explain-path"
+                >/v1/sites/{param}/domains/{param}</code
+              >
+            </div>
+            <p class="param-explain-nomatch" role="status">
+              <span aria-hidden="true">✗</span> NOT a match — different parameter
+              count / structure
+            </p>
+          </div>
+        </section>
+
+        <div
+          class="rounded-2xl border border-[#1f2937] bg-[#0f172a] p-4 sm:p-5"
+          aria-labelledby="param-mapping-heading"
+        >
+          <h3
+            id="param-mapping-heading"
+            class="mb-2 text-sm font-semibold text-[#e5e7eb]"
+          >
+            Path Parameter Mapping (Optional)
+          </h3>
+          <p class="text-sm leading-relaxed text-[#9ca3af]">
+            Optionally map Swagger path parameters to Postman variables when
+            names differ. Example:
+            <code class="font-mono text-[#c7d2fe]">{hosting_id}</code>
+            →
+            <code class="font-mono text-[#c7d2fe]">{hosting_account_id}</code>
+          </p>
+          <p class="mt-2 text-xs text-[#6b7280]">
+            You can add multiple mappings for different endpoints.
+          </p>
+
+          <div
+            id="param-mapping-rows"
+            class="mt-4 flex flex-col gap-3"
+          ></div>
+
+          <button
+            type="button"
+            id="param-mapping-add"
+            class="param-mapping-add-btn mt-3 inline-flex items-center gap-1.5 rounded-lg border border-[#6366f1]/50 bg-[#6366f1]/15 px-3 py-2 text-sm font-medium text-[#a5b4fc] transition-colors hover:border-[#6366f1] hover:bg-[#6366f1]/25"
+          >
+            <span class="text-base leading-none" aria-hidden="true">+</span>
+            Add Mapping
+          </button>
+
+          <p
+            id="param-mapping-dup-warning"
+            class="param-mapping-dup-warning mt-3 hidden text-sm text-amber-300/95"
+            role="status"
+          ></p>
+
+          <p class="mt-4 border-t border-[#1f2937] pt-4 text-xs leading-relaxed text-[#6b7280]">
+            If no mapping is provided, parameters are automatically normalized
+            (e.g.,
+            <code class="font-mono text-[#9ca3af]">{id}</code>
+            →
+            <code class="font-mono text-[#9ca3af]">{param}</code>).
+          </p>
+        </div>
+            </div>
+
+            <template id="param-mapping-row-template">
+              <div
+                class="param-mapping-row flex flex-col gap-2 rounded-lg border border-[#1f2937] bg-[#0f172a] p-3 sm:flex-row sm:items-center sm:gap-3"
+              >
+                <input
+                  type="text"
+                  class="param-mapping-swagger min-w-0 flex-1 rounded-lg border border-[#1f2937] bg-[#111827] px-3 py-2 font-mono text-sm text-[#e5e7eb] placeholder:text-[#6b7280] placeholder:opacity-80 focus:border-[#6366f1] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/25"
+                  placeholder="hosting_id"
+                  autocomplete="off"
+                  aria-label="Swagger parameter name"
+                />
+                <span
+                  class="hidden shrink-0 text-center text-sm font-medium text-[#9ca3af] sm:inline sm:w-8"
+                  aria-hidden="true"
+                  >→</span
+                >
+                <span
+                  class="shrink-0 text-center text-xs font-medium text-[#9ca3af] sm:hidden"
+                  aria-hidden="true"
+                  >→</span
+                >
+                <input
+                  type="text"
+                  class="param-mapping-postman min-w-0 flex-1 rounded-lg border border-[#1f2937] bg-[#111827] px-3 py-2 font-mono text-sm text-[#e5e7eb] placeholder:text-[#6b7280] placeholder:opacity-80 focus:border-[#6366f1] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/25"
+                  placeholder="hosting_account_id"
+                  autocomplete="off"
+                  aria-label="Postman parameter name"
+                />
+                <button
+                  type="button"
+                  class="param-mapping-remove shrink-0 rounded-lg border border-[#ef4444]/30 bg-[#ef4444]/10 px-3 py-2 text-sm font-medium text-red-300 transition-colors hover:border-[#ef4444]/50 hover:bg-[#ef4444]/20"
+                  aria-label="Remove this mapping row"
+                >
+                  ✕
+                </button>
+              </div>
+            </template>
+          </div>
+        </details>
+
+        <div
+          class="compare-cta mt-6 rounded-xl border border-[#1f2937] bg-[#0f172a] p-4 sm:p-5"
+        >
+          <label
+            class="mb-4 flex cursor-pointer items-center gap-2 text-sm text-[#9ca3af]"
+          >
+            <input
+              type="checkbox"
+              id="exclude-deprecated"
+              checked
+              class="h-4 w-4 rounded border-[#374151] bg-[#111827] text-[#6366f1] focus:ring-[#6366f1]/40"
+            />
             Exclude deprecated operations from Swagger
           </label>
+          <button
+            type="submit"
+            class="primary relative flex min-h-[3.25rem] w-full items-center justify-center rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] px-6 py-4 text-lg font-semibold text-white shadow-[0_0_40px_rgba(99,102,241,0.2)] transition-all hover:from-[#4f46e5] hover:to-[#7c3aed] hover:shadow-[0_0_52px_rgba(99,102,241,0.3)] disabled:cursor-not-allowed disabled:opacity-90"
+            id="run-btn"
+          >
+            <span
+              class="run-btn-label inline-flex items-center justify-center gap-2"
+            >
+              Compare coverage
+            </span>
+            <span
+              class="run-btn-loading absolute inset-0 hidden items-center justify-center gap-2 px-4"
+              aria-hidden="true"
+            >
+              <svg
+                class="h-5 w-5 shrink-0 animate-spin text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <circle
+                  class="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="4"
+                ></circle>
+                <path
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+              <span>Analyzing coverage…</span>
+            </span>
+          </button>
         </div>
-
-        <button type="submit" class="primary" id="run-btn">Run coverage report</button>
       </form>
 
-      <div id="results" class="hidden">
-        <p id="openapi-load-notice" class="alert info hidden" role="status"></p>
-        <div class="panel">
-          <h2>Summary</h2>
-          <div class="metrics">
-            <div class="metric">
-              <div class="value" id="m-total-apis">0</div>
-              <div class="label">APIs in Swagger</div>
+      <div
+        id="results"
+        class="results-panel scroll-mt-20 mt-8 hidden rounded-2xl border border-[#1f2937] bg-[#111827] p-4 sm:scroll-mt-24 sm:p-6"
+      >
+        <p
+          id="openapi-load-notice"
+          class="alert info mb-4 hidden rounded-xl border border-[#f59e0b]/40 bg-[#f59e0b]/10 px-4 py-3 text-sm text-amber-100"
+          role="status"
+        ></p>
+
+        <!-- Results header: actions first for scanability -->
+        <section class="mb-6" aria-label="Coverage summary">
+          <div
+            class="mb-4 flex flex-col gap-3 border-b border-[#1f2937] pb-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
+          >
+            <div>
+              <h2 class="text-lg font-semibold text-[#e5e7eb]">
+                Results
+              </h2>
+              <p class="mt-0.5 text-xs text-[#9ca3af]">
+                Summary metrics and request lists below.
+              </p>
             </div>
-            <div class="metric">
-              <div class="value" id="m-postman-total">0</div>
-              <div class="label">Requests in collection</div>
+            <button
+              type="button"
+              id="download-report-btn"
+              class="hidden w-full shrink-0 rounded-lg border border-[#22c55e]/45 bg-[#22c55e]/15 px-4 py-2.5 text-sm font-semibold text-[#86efac] transition-colors hover:border-[#22c55e]/65 hover:bg-[#22c55e]/25 disabled:opacity-50 sm:w-auto"
+              disabled
+            >
+              Download report (.md)
+            </button>
+          </div>
+          <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <div
+              class="metric-card rounded-2xl border border-[#6366f1]/45 bg-[#111827] p-4 text-center shadow-lg shadow-black/20 hover:scale-[1.02] sm:p-5"
+            >
+              <div
+                class="text-3xl font-bold tabular-nums text-[#6366f1] sm:text-4xl"
+                id="m-total-apis"
+              >
+                0
+              </div>
+              <div class="mt-1 text-sm font-medium text-[#9ca3af]">
+                Total APIs (Swagger)
+              </div>
             </div>
-            <div class="metric">
-              <div class="value" id="m-matched">0</div>
-              <div class="label">Matched requests</div>
+            <div
+              class="metric-card rounded-2xl border border-[#22c55e]/45 bg-[#111827] p-4 text-center shadow-lg shadow-black/20 hover:scale-[1.02] sm:p-5"
+            >
+              <div
+                class="text-3xl font-bold tabular-nums text-[#22c55e] sm:text-4xl"
+                id="m-unique-auto"
+              >
+                0
+              </div>
+              <div class="mt-1 text-sm font-medium text-[#9ca3af]">
+                Covered APIs
+              </div>
             </div>
-            <div class="metric">
-              <div class="value warn" id="m-unmatched">0</div>
-              <div class="label">Not in Swagger</div>
+            <div
+              class="metric-card rounded-2xl border border-[#ef4444]/45 bg-[#111827] p-4 text-center shadow-lg shadow-black/20 hover:scale-[1.02] sm:p-5"
+            >
+              <div
+                class="text-3xl font-bold tabular-nums text-[#ef4444] sm:text-4xl"
+                id="m-missing"
+              >
+                0
+              </div>
+              <div class="mt-1 text-sm font-medium text-[#9ca3af]">
+                Missing APIs
+              </div>
             </div>
-            <div class="metric">
-              <div class="value" id="m-unique-auto">0</div>
-              <div class="label">Unique automated APIs</div>
-            </div>
-            <div class="metric">
-              <div class="value warn" id="m-missing">0</div>
-              <div class="label">Swagger APIs not covered</div>
-            </div>
-            <div class="metric">
-              <div class="value" id="m-coverage">0%</div>
-              <div class="label">Automation coverage</div>
-            </div>
-            <div class="metric">
-              <div class="value warn" id="m-remaining-pct">0%</div>
-              <div class="label">Remaining (of Swagger)</div>
+            <div
+              class="metric-card rounded-2xl border border-[#8b5cf6]/45 bg-[#111827] p-4 text-center shadow-lg shadow-black/20 hover:scale-[1.02] sm:p-5"
+            >
+              <div
+                class="text-3xl font-bold tabular-nums text-[#8b5cf6] sm:text-4xl"
+                id="m-coverage"
+              >
+                0%
+              </div>
+              <div class="mt-1 text-sm font-medium text-[#9ca3af]">
+                Coverage %
+              </div>
             </div>
           </div>
 
-          <table class="summary">
-            <thead>
-              <tr>
-                <th>Metric</th>
-                <th>Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Total APIs from Swagger</td>
-                <td id="t-total-apis">—</td>
-              </tr>
-              <tr>
-                <td>Total requests in Postman</td>
-                <td id="t-postman">—</td>
-              </tr>
-              <tr>
-                <td>Matched to Swagger</td>
-                <td id="t-matched">—</td>
-              </tr>
-              <tr>
-                <td>Postman requests not in Swagger</td>
-                <td id="t-unmatched">—</td>
-              </tr>
-              <tr>
-                <td>Swagger endpoints not automated</td>
-                <td id="t-missing">—</td>
-              </tr>
-            </tbody>
-          </table>
-
-          <h2 style="margin-top: 1.25rem">Details</h2>
-          <div class="tabs">
-            <button type="button" data-tab="automated" class="active">Matched requests</button>
-            <button type="button" data-tab="missing">Missing from automation</button>
-            <button type="button" data-tab="unmatched">Not in Swagger</button>
+          <!-- Progress bar -->
+          <div class="mt-6">
+            <div
+              class="flex justify-between text-xs font-medium text-[#9ca3af]"
+            >
+              <span>Coverage</span>
+              <span id="coverage-progress-label">0%</span>
+            </div>
+            <div
+              class="mt-2 h-3 overflow-hidden rounded-full bg-[#1f2937] shadow-inner"
+              role="progressbar"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow="0"
+              id="coverage-progress"
+            >
+              <div
+                id="coverage-progress-fill"
+                class="coverage-progress-fill h-full w-0 min-h-full rounded-full"
+              ></div>
+            </div>
           </div>
-          <div class="list-panel">
-            <pre id="list-content"></pre>
+        </section>
+
+        <!-- Hidden from layout but updated by app.js (required IDs) -->
+        <div
+          class="sr-only"
+          aria-hidden="true"
+        >
+          <span id="m-postman-total">0</span>
+          <span id="m-matched">0</span>
+          <span id="m-unmatched">0</span>
+          <span id="m-remaining-pct">0%</span>
+        </div>
+
+        <div
+          class="rounded-2xl border border-[#1f2937] bg-[#0f172a] p-4 shadow-lg shadow-black/30 sm:p-6"
+        >
+          <details class="group mb-4 sm:mb-6">
+            <summary
+              class="cursor-pointer list-none text-sm font-semibold text-[#e5e7eb] marker:hidden [&::-webkit-details-marker]:hidden"
+            >
+              <span
+                class="inline-flex items-center gap-2 rounded-lg border border-[#1f2937] bg-[#0f172a] px-3 py-2 text-[#e5e7eb] hover:border-[#6366f1]/50 hover:bg-[#111827]"
+              >
+                <span class="details-chevron text-[#9ca3af]">▸</span>
+                Full metrics table
+              </span>
+            </summary>
+            <div class="mt-4 overflow-x-auto">
+              <table class="summary w-full border-collapse text-sm">
+                <thead>
+                  <tr class="border-b border-[#1f2937] text-left text-[#9ca3af]">
+                    <th class="py-2 pr-4 font-medium">Metric</th>
+                    <th class="py-2 font-medium">Value</th>
+                  </tr>
+                </thead>
+                <tbody class="text-[#e5e7eb]">
+                  <tr class="border-b border-[#1f2937]/80">
+                    <td class="py-2 pr-4">Total APIs from Swagger</td>
+                    <td id="t-total-apis" class="py-2 font-medium">—</td>
+                  </tr>
+                  <tr class="border-b border-[#1f2937]/80">
+                    <td class="py-2 pr-4">Total requests in Postman</td>
+                    <td id="t-postman" class="py-2 font-medium">—</td>
+                  </tr>
+                  <tr class="border-b border-[#1f2937]/80">
+                    <td class="py-2 pr-4">Matched to Swagger</td>
+                    <td id="t-matched" class="py-2 font-medium">—</td>
+                  </tr>
+                  <tr class="border-b border-[#1f2937]/80">
+                    <td class="py-2 pr-4">Postman requests not in Swagger</td>
+                    <td id="t-unmatched" class="py-2 font-medium">—</td>
+                  </tr>
+                  <tr>
+                    <td class="py-2 pr-4">Swagger endpoints not automated</td>
+                    <td id="t-missing" class="py-2 font-medium">—</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </details>
+
+          <h2 class="mb-3 text-lg font-semibold text-[#e5e7eb]">Details</h2>
+          <div class="tabs mb-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              data-tab="automated"
+              class="rounded-full border border-[#1f2937] bg-[#0f172a] px-4 py-2 text-sm font-medium text-[#9ca3af] hover:border-[#6366f1]/50 hover:text-[#c7d2fe] active"
+            >
+              Matched requests
+            </button>
+            <button
+              type="button"
+              data-tab="missing"
+              class="rounded-full border border-[#1f2937] bg-[#0f172a] px-4 py-2 text-sm font-medium text-[#9ca3af] hover:border-[#ef4444]/50 hover:text-red-200"
+            >
+              Missing from automation
+            </button>
+            <button
+              type="button"
+              data-tab="unmatched"
+              class="rounded-full border border-[#1f2937] bg-[#0f172a] px-4 py-2 text-sm font-medium text-[#9ca3af] hover:border-[#f59e0b]/50 hover:text-amber-200"
+            >
+              Not in Swagger
+            </button>
+          </div>
+          <h3
+            id="list-section-title"
+            class="mb-2 text-sm font-semibold text-[#9ca3af]"
+          >
+            Covered APIs
+          </h3>
+          <div
+            class="list-panel max-h-80 overflow-y-auto rounded-xl border border-[#1f2937] bg-[#0f172a] p-4 shadow-inner"
+          >
+            <div
+              id="list-content"
+              class="list-content-lines font-mono text-sm leading-relaxed text-[#e5e7eb]"
+            ></div>
           </div>
         </div>
       </div>
 
-      <div class="alert info" style="margin-top: 1rem">
-        <strong>CORS:</strong> Many APIs do not allow direct <code>fetch</code> from GitHub Pages.
-        If that happens, this app retries via public CORS relays; if those fail, open your OpenAPI
-        URL in a new tab, save the JSON, and use <strong>Upload OpenAPI JSON</strong>. The durable
-        fix is for the API to send <code>Access-Control-Allow-Origin</code> for your Pages origin.
-      </div>
-
-      <footer>
-        Same rules as <code>api_coverage.py</code>. Deploy the <code>docs/</code> folder with GitHub Pages (see README).
+      <footer
+        class="mt-8 border-t border-[#1f2937] pt-6 text-center text-sm text-[#9ca3af]"
+      >
+        Built for QA &amp; Developers • API Coverage Tool
       </footer>
     </main>
-    <script src="app.js?v=6"></script>
+    <script src="app.js?v=11"></script>
+    <script src="ui.js?v=3"></script>
+    <script src="param-mapping-ui.js?v=1"></script>
   </body>
 </html>
