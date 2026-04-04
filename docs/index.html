@@ -20,7 +20,7 @@
         },
       };
     </script>
-    <link rel="stylesheet" href="styles.css?v=3" />
+    <link rel="stylesheet" href="styles.css?v=5" />
   </head>
   <body
     class="app-shell min-h-screen font-sans text-[#e5e7eb] antialiased"
@@ -28,7 +28,10 @@
     <main
       class="relative z-10 mx-auto my-4 max-w-6xl rounded-2xl border border-[#1f2937] bg-[#0f172a] px-4 pb-10 pt-6 shadow-[0_10px_30px_rgba(0,0,0,0.4),0_0_40px_rgba(99,102,241,0.12)] backdrop-blur-sm sm:px-6 lg:px-10"
     >
-      <!-- Hero -->
+      <!-- Get started: hero + steps -->
+      <div
+        class="mb-6 rounded-2xl border border-[#1f2937]/90 bg-[#0f172a]/60 p-4 sm:p-6"
+      >
       <header class="mb-5 text-center lg:text-left lg:max-w-4xl">
         <h1
           class="text-balance text-2xl font-bold tracking-tight text-[#e5e7eb] sm:text-3xl"
@@ -104,8 +107,9 @@
           </div>
         </div>
       </section>
+      </div>
 
-      <!-- Empty state (slim; ui.js toggles visibility vs #results) -->
+      <!-- Empty state (slim; ui.js toggles vs #results & input activity) -->
       <div
         id="empty-state"
         class="empty-state-visible mb-4 rounded-xl border border-dashed border-[#334155]/90 bg-[#111827]/80 px-4 py-3 text-center shadow-inner"
@@ -173,9 +177,15 @@
         class="rounded-2xl border border-[#1f2937] bg-[#111827] p-4 shadow-[0_0_40px_rgba(99,102,241,0.08)] sm:p-6"
         novalidate
       >
-        <h2 class="mb-4 text-base font-semibold text-[#e5e7eb] sm:text-lg">
-          Inputs
-        </h2>
+        <div class="mb-4">
+          <h2 class="text-base font-semibold text-[#e5e7eb] sm:text-lg">
+            Run analysis
+          </h2>
+          <p class="mt-1 text-xs text-[#9ca3af] sm:text-sm">
+            Add your OpenAPI spec (URL or file) and Postman collection, then
+            compare.
+          </p>
+        </div>
 
         <div
           class="mb-4 grid gap-4 lg:grid-cols-2 lg:gap-6 lg:items-start"
@@ -323,11 +333,38 @@
         </div>
         </div>
 
-        <!-- Removed Postman URL variables section to avoid redundancy; parameter mapping handles customization. -->
-
-        <div
-          class="mt-4 grid gap-4 xl:grid-cols-2 xl:gap-6 xl:items-start"
+        <!-- Advanced: above Compare so users see it before running -->
+        <details
+          id="advanced-coverage-details"
+          class="advanced-details mt-6 rounded-xl border border-[#1f2937] border-l-4 border-l-amber-500/55 bg-[#0f172a] text-sm shadow-sm open:pb-1"
         >
+          <summary
+            class="cursor-pointer list-none px-4 py-3 font-semibold text-[#e5e7eb] marker:hidden sm:px-5 sm:py-3.5 [&::-webkit-details-marker]:hidden"
+          >
+            <span
+              class="advanced-chevron mr-2 inline-block text-[#a5b4fc] transition-transform duration-200"
+              >▸</span
+            >
+            <span class="text-[#fcd34d]">Important:</span>
+            parameter matching &amp; optional mappings
+          </summary>
+          <div
+            class="space-y-4 border-t border-[#1f2937] px-3 pb-4 pt-4 sm:px-4"
+          >
+            <p class="text-sm font-medium leading-relaxed text-[#fde68a]">
+              If Swagger and Postman use
+              <strong class="text-amber-100">different path parameter names</strong>
+              for the same endpoint, coverage can look wrong unless you
+              understand how matching works — or add explicit mappings below.
+            </p>
+            <p class="text-xs leading-relaxed text-[#9ca3af]">
+              Open this section for the full rules, examples, and optional
+              Swagger ↔ Postman name maps. You can still run Compare without
+              opening it when your path templates already align.
+            </p>
+            <div
+              class="grid gap-4 xl:grid-cols-2 xl:gap-6 xl:items-start"
+            >
         <section
           class="rounded-2xl border border-[#1f2937] bg-[#0f172a] p-4 shadow-sm sm:p-5"
           aria-labelledby="param-matching-heading"
@@ -490,84 +527,130 @@
             <code class="font-mono text-[#9ca3af]">{param}</code>).
           </p>
         </div>
-        </div>
+            </div>
 
-        <template id="param-mapping-row-template">
-          <div
-            class="param-mapping-row flex flex-col gap-2 rounded-lg border border-[#1f2937] bg-[#0f172a] p-3 sm:flex-row sm:items-center sm:gap-3"
+            <template id="param-mapping-row-template">
+              <div
+                class="param-mapping-row flex flex-col gap-2 rounded-lg border border-[#1f2937] bg-[#0f172a] p-3 sm:flex-row sm:items-center sm:gap-3"
+              >
+                <input
+                  type="text"
+                  class="param-mapping-swagger min-w-0 flex-1 rounded-lg border border-[#1f2937] bg-[#111827] px-3 py-2 font-mono text-sm text-[#e5e7eb] placeholder:text-[#6b7280] placeholder:opacity-80 focus:border-[#6366f1] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/25"
+                  placeholder="hosting_id"
+                  autocomplete="off"
+                  aria-label="Swagger parameter name"
+                />
+                <span
+                  class="hidden shrink-0 text-center text-sm font-medium text-[#9ca3af] sm:inline sm:w-8"
+                  aria-hidden="true"
+                  >→</span
+                >
+                <span
+                  class="shrink-0 text-center text-xs font-medium text-[#9ca3af] sm:hidden"
+                  aria-hidden="true"
+                  >→</span
+                >
+                <input
+                  type="text"
+                  class="param-mapping-postman min-w-0 flex-1 rounded-lg border border-[#1f2937] bg-[#111827] px-3 py-2 font-mono text-sm text-[#e5e7eb] placeholder:text-[#6b7280] placeholder:opacity-80 focus:border-[#6366f1] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/25"
+                  placeholder="hosting_account_id"
+                  autocomplete="off"
+                  aria-label="Postman parameter name"
+                />
+                <button
+                  type="button"
+                  class="param-mapping-remove shrink-0 rounded-lg border border-[#ef4444]/30 bg-[#ef4444]/10 px-3 py-2 text-sm font-medium text-red-300 transition-colors hover:border-[#ef4444]/50 hover:bg-[#ef4444]/20"
+                  aria-label="Remove this mapping row"
+                >
+                  ✕
+                </button>
+              </div>
+            </template>
+          </div>
+        </details>
+
+        <div
+          class="compare-cta mt-6 rounded-xl border border-[#1f2937] bg-[#0f172a] p-4 sm:p-5"
+        >
+          <label
+            class="mb-4 flex cursor-pointer items-center gap-2 text-sm text-[#9ca3af]"
           >
             <input
-              type="text"
-              class="param-mapping-swagger min-w-0 flex-1 rounded-lg border border-[#1f2937] bg-[#111827] px-3 py-2 font-mono text-sm text-[#e5e7eb] placeholder:text-[#6b7280] placeholder:opacity-80 focus:border-[#6366f1] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/25"
-              placeholder="hosting_id"
-              autocomplete="off"
-              aria-label="Swagger parameter name"
+              type="checkbox"
+              id="exclude-deprecated"
+              checked
+              class="h-4 w-4 rounded border-[#374151] bg-[#111827] text-[#6366f1] focus:ring-[#6366f1]/40"
             />
+            Exclude deprecated operations from Swagger
+          </label>
+          <button
+            type="submit"
+            class="primary relative flex min-h-[3.25rem] w-full items-center justify-center rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] px-6 py-4 text-lg font-semibold text-white shadow-[0_0_40px_rgba(99,102,241,0.2)] transition-all hover:from-[#4f46e5] hover:to-[#7c3aed] hover:shadow-[0_0_52px_rgba(99,102,241,0.3)] disabled:cursor-not-allowed disabled:opacity-90"
+            id="run-btn"
+          >
             <span
-              class="hidden shrink-0 text-center text-sm font-medium text-[#9ca3af] sm:inline sm:w-8"
-              aria-hidden="true"
-              >→</span
+              class="run-btn-label inline-flex items-center justify-center gap-2"
             >
+              Compare coverage
+            </span>
             <span
-              class="shrink-0 text-center text-xs font-medium text-[#9ca3af] sm:hidden"
+              class="run-btn-loading absolute inset-0 hidden items-center justify-center gap-2 px-4"
               aria-hidden="true"
-              >→</span
             >
-            <input
-              type="text"
-              class="param-mapping-postman min-w-0 flex-1 rounded-lg border border-[#1f2937] bg-[#111827] px-3 py-2 font-mono text-sm text-[#e5e7eb] placeholder:text-[#6b7280] placeholder:opacity-80 focus:border-[#6366f1] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/25"
-              placeholder="hosting_account_id"
-              autocomplete="off"
-              aria-label="Postman parameter name"
-            />
-            <button
-              type="button"
-              class="param-mapping-remove shrink-0 rounded-lg border border-[#ef4444]/30 bg-[#ef4444]/10 px-3 py-2 text-sm font-medium text-red-300 transition-colors hover:border-[#ef4444]/50 hover:bg-[#ef4444]/20"
-              aria-label="Remove this mapping row"
-            >
-              ✕
-            </button>
-          </div>
-        </template>
-
-        <label
-          class="mb-4 mt-4 flex cursor-pointer items-center gap-2 text-sm text-[#9ca3af]"
-        >
-          <input
-            type="checkbox"
-            id="exclude-deprecated"
-            checked
-            class="h-4 w-4 rounded border-[#374151] bg-[#0f172a] text-[#6366f1] focus:ring-[#6366f1]/40"
-          />
-          Exclude deprecated operations from Swagger
-        </label>
-
-        <button
-          type="submit"
-          class="primary w-full rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] px-6 py-3.5 text-base font-semibold text-white shadow-[0_0_40px_rgba(99,102,241,0.15)] transition-all hover:from-[#4f46e5] hover:to-[#7c3aed] hover:shadow-[0_0_48px_rgba(99,102,241,0.25)] disabled:cursor-not-allowed disabled:opacity-50"
-          id="run-btn"
-        >
-          Compare
-        </button>
+              <svg
+                class="h-5 w-5 shrink-0 animate-spin text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <circle
+                  class="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="4"
+                ></circle>
+                <path
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+              <span>Analyzing coverage…</span>
+            </span>
+          </button>
+        </div>
       </form>
 
-      <div id="results" class="results-panel mt-8 hidden">
+      <div
+        id="results"
+        class="results-panel scroll-mt-20 mt-8 hidden rounded-2xl border border-[#1f2937] bg-[#111827] p-4 sm:scroll-mt-24 sm:p-6"
+      >
         <p
           id="openapi-load-notice"
           class="alert info mb-4 hidden rounded-xl border border-[#f59e0b]/40 bg-[#f59e0b]/10 px-4 py-3 text-sm text-amber-100"
           role="status"
         ></p>
 
-        <!-- 4 summary cards -->
+        <!-- Results header: actions first for scanability -->
         <section class="mb-6" aria-label="Coverage summary">
           <div
-            class="mb-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
+            class="mb-4 flex flex-col gap-3 border-b border-[#1f2937] pb-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
           >
-            <h2 class="text-lg font-semibold text-[#e5e7eb]">Result summary</h2>
+            <div>
+              <h2 class="text-lg font-semibold text-[#e5e7eb]">
+                Results
+              </h2>
+              <p class="mt-0.5 text-xs text-[#9ca3af]">
+                Summary metrics and request lists below.
+              </p>
+            </div>
             <button
               type="button"
               id="download-report-btn"
-              class="hidden shrink-0 rounded-lg border border-[#22c55e]/45 bg-[#22c55e]/10 px-3 py-2 text-sm font-medium text-[#86efac] transition-colors hover:border-[#22c55e]/65 hover:bg-[#22c55e]/20 disabled:opacity-50"
+              class="hidden w-full shrink-0 rounded-lg border border-[#22c55e]/45 bg-[#22c55e]/15 px-4 py-2.5 text-sm font-semibold text-[#86efac] transition-colors hover:border-[#22c55e]/65 hover:bg-[#22c55e]/25 disabled:opacity-50 sm:w-auto"
               disabled
             >
               Download report (.md)
@@ -664,7 +747,7 @@
         </div>
 
         <div
-          class="rounded-2xl border border-[#1f2937] bg-[#111827] p-4 shadow-lg shadow-black/30 sm:p-6"
+          class="rounded-2xl border border-[#1f2937] bg-[#0f172a] p-4 shadow-lg shadow-black/30 sm:p-6"
         >
           <details class="group mb-4 sm:mb-6">
             <summary
@@ -758,8 +841,8 @@
         Built for QA &amp; Developers • API Coverage Tool
       </footer>
     </main>
-    <script src="app.js?v=9"></script>
-    <script src="ui.js?v=2"></script>
+    <script src="app.js?v=11"></script>
+    <script src="ui.js?v=3"></script>
     <script src="param-mapping-ui.js?v=1"></script>
   </body>
 </html>

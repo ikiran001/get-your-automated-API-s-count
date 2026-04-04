@@ -285,6 +285,21 @@ details[open] > summary .layout-tip-chevron {
   transform: rotate(90deg);
 }
 
+details.advanced-details[open] > summary .advanced-chevron {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #run-btn .animate-spin {
+    animation: none;
+  }
+
+  #run-btn .opacity-75,
+  #run-btn .opacity-25 {
+    opacity: 0.6;
+  }
+}
+
 /* Spec + collection both satisfied (UI hint only) */
 .swagger-source-shell.panel-input-ready,
 .postman-source-shell.panel-input-ready {

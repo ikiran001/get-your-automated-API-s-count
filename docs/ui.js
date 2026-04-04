@@ -137,16 +137,31 @@
     syncProgressBar();
   }
 
+  function userHasStartedInputs() {
+    var cf = document.getElementById("collection-file");
+    var sf = document.getElementById("swagger-file");
+    var url = document.getElementById("swagger-url");
+    var hasColl = cf && cf.files && cf.files.length;
+    var hasS = sf && sf.files && sf.files.length;
+    var hasUrl = url && (url.value || "").trim().length > 0;
+    return !!(hasColl || hasS || hasUrl);
+  }
+
   function syncEmptyState() {
     var results = document.getElementById("results");
     var empty = document.getElementById("empty-state");
     if (!results || !empty) return;
-    if (results.classList.contains("hidden")) {
-      empty.classList.remove("empty-state-hidden");
-      empty.classList.add("empty-state-visible");
-    } else {
+    if (!results.classList.contains("hidden")) {
       empty.classList.add("empty-state-hidden");
       empty.classList.remove("empty-state-visible");
+      return;
+    }
+    if (userHasStartedInputs()) {
+      empty.classList.add("empty-state-hidden");
+      empty.classList.remove("empty-state-visible");
+    } else {
+      empty.classList.remove("empty-state-hidden");
+      empty.classList.add("empty-state-visible");
     }
   }
 
@@ -247,6 +262,8 @@
 
     swaggerPanel.classList.toggle("panel-input-ready", ready);
     postmanPanel.classList.toggle("panel-input-ready", ready);
+
+    syncEmptyState();
   }
 
   function wireCoverageInputPanels() {

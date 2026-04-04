@@ -385,6 +385,25 @@ function clearError() {
   els.error.classList.add("hidden");
 }
 
+function setCompareButtonLoading(loading) {
+  const btn = els.runBtn;
+  if (!btn) return;
+  const label = btn.querySelector(".run-btn-label");
+  const pending = btn.querySelector(".run-btn-loading");
+  if (!label || !pending) return;
+  if (loading) {
+    label.classList.add("hidden");
+    pending.classList.remove("hidden");
+    pending.classList.add("flex");
+    btn.setAttribute("aria-busy", "true");
+  } else {
+    label.classList.remove("hidden");
+    pending.classList.add("hidden");
+    pending.classList.remove("flex");
+    btn.removeAttribute("aria-busy");
+  }
+}
+
 function setActiveTab(name) {
   els.tabBtns.forEach((b) => {
     b.classList.toggle("active", b.getAttribute("data-tab") === name);
@@ -434,6 +453,7 @@ els.form.addEventListener("submit", async (e) => {
   }
 
   els.runBtn.disabled = true;
+  setCompareButtonLoading(true);
   try {
     const collection = await readJsonFile(collFiles[0]);
     let openapi = null;
@@ -496,6 +516,16 @@ els.form.addEventListener("submit", async (e) => {
     setActiveTab("automated");
     els.results.classList.remove("hidden");
 
+    requestAnimationFrame(function () {
+      var reduce =
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      els.results.scrollIntoView({
+        behavior: reduce ? "auto" : "smooth",
+        block: "start",
+      });
+    });
+
     window.dispatchEvent(
       new CustomEvent("api-coverage-report", {
         detail: {
@@ -517,6 +547,7 @@ els.form.addEventListener("submit", async (e) => {
   } catch (err) {
     showError(err.message || String(err));
   } finally {
+    setCompareButtonLoading(false);
     els.runBtn.disabled = false;
   }
 });
