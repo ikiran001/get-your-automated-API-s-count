@@ -3,7 +3,16 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>API automation coverage</title>
+    <title>TestLens — See what your API tests miss</title>
+    <meta
+      name="description"
+      content="TestLens compares OpenAPI/Swagger to your Postman collection so you can see which APIs are covered by tests and which are not."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none'%3E%3Ccircle cx='16' cy='16' r='13' stroke='%236366f1' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%238b5cf6'/%3E%3Cpath stroke='%23a5b4fc' stroke-linecap='round' stroke-width='1.5' d='M22 22l6 6'/%3E%3C/svg%3E"
+      type="image/svg+xml"
+    />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -20,90 +29,186 @@
         },
       };
     </script>
-    <link rel="stylesheet" href="styles.css?v=5" />
+    <link rel="stylesheet" href="styles.css?v=6" />
   </head>
   <body
     class="app-shell min-h-screen font-sans text-[#e5e7eb] antialiased"
   >
     <main
-      class="relative z-10 mx-auto my-4 max-w-6xl rounded-2xl border border-[#1f2937] bg-[#0f172a] px-4 pb-10 pt-6 shadow-[0_10px_30px_rgba(0,0,0,0.4),0_0_40px_rgba(99,102,241,0.12)] backdrop-blur-sm sm:px-6 lg:px-10"
+      class="main-glass relative z-10 mx-auto my-4 max-w-6xl rounded-2xl border border-[#1f2937]/80 bg-[#0f172a]/75 px-4 pb-10 pt-8 shadow-[0_10px_30px_rgba(0,0,0,0.4),0_0_40px_rgba(99,102,241,0.12)] backdrop-blur-xl sm:my-6 sm:px-6 sm:pt-10 lg:px-10"
     >
-      <!-- Get started: hero + steps -->
+      <!-- Get started: hero + value + steps -->
       <div
-        class="mb-6 rounded-2xl border border-[#1f2937]/90 bg-[#0f172a]/60 p-4 sm:p-6"
+        class="hero-band mb-8 rounded-2xl border border-[#1f2937]/70 bg-[#0f172a]/50 p-5 shadow-inner backdrop-blur-md sm:mb-10 sm:p-7"
       >
-      <header class="mb-5 text-center lg:text-left lg:max-w-4xl">
-        <h1
-          class="text-balance text-2xl font-bold tracking-tight text-[#e5e7eb] sm:text-3xl"
+      <header class="mb-6 text-center lg:mb-8 lg:text-left lg:max-w-3xl">
+        <p
+          class="mb-3 text-sm font-semibold tracking-tight text-[#e5e7eb]"
         >
-          Know Your
-          <span class="text-gradient-brand">API Test Coverage</span>
-          in
-          <span class="text-gradient-brand">Seconds</span>
-          🚀
+          <span class="text-gradient-brand text-base sm:text-lg">TestLens</span>
+        </p>
+        <h1
+          class="text-balance text-2xl font-bold leading-tight tracking-tight text-[#f8fafc] sm:text-4xl sm:leading-tight"
+        >
+          See what your API tests miss
         </h1>
         <p
-          class="mx-auto mt-2 max-w-2xl text-base leading-relaxed text-[#9ca3af] lg:mx-0"
+          class="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-[#94a3b8] sm:text-lg lg:mx-0"
         >
-          Upload Swagger + Postman → Instantly see what's tested &amp; what's
-          missing
+          Instantly measure your API test coverage and identify missing
+          endpoints in seconds.
         </p>
+        <div class="mt-6 flex flex-col items-center gap-3 sm:mt-8 lg:items-start">
+          <a
+            href="#coverage-form"
+            class="hero-cta btn-interactive inline-flex min-h-[3rem] items-center justify-center rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] px-8 py-3 text-base font-semibold text-white shadow-[0_0_32px_rgba(99,102,241,0.35)] ring-1 ring-white/10 hover:shadow-[0_0_44px_rgba(99,102,241,0.45)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#a5b4fc] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f172a]"
+          >
+            🚀 Analyze Coverage
+          </a>
+          <p
+            class="max-w-md text-center text-xs leading-relaxed text-[#94a3b8] lg:text-left sm:text-sm"
+          >
+            No login required • 100% free • Runs in your browser
+          </p>
+        </div>
       </header>
 
-      <!-- Steps (compact) -->
       <section
-        class="mb-4 grid grid-cols-3 gap-2 sm:gap-3"
+        class="why-testlens mb-8 rounded-xl border border-[#1f2937]/80 bg-[#111827]/40 p-4 sm:p-5"
+        aria-labelledby="why-testlens-heading"
+      >
+        <h2
+          id="why-testlens-heading"
+          class="mb-3 text-center text-sm font-semibold uppercase tracking-wider text-[#a5b4fc] sm:text-left"
+        >
+          Why TestLens?
+        </h2>
+        <ul
+          class="grid gap-3 sm:grid-cols-3 sm:gap-4"
+        >
+          <li
+            class="flex gap-3 rounded-lg border border-transparent bg-[#0f172a]/50 px-3 py-2.5 transition-all duration-200 ease-out hover:border-[#6366f1]/25 hover:shadow-md hover:shadow-[#6366f1]/10"
+          >
+            <span
+              class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#6366f1]/15 text-[#a5b4fc]"
+              aria-hidden="true"
+            >
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            </span>
+            <span class="text-sm leading-snug text-[#cbd5e1]"
+              >Find untested endpoints instantly</span
+            >
+          </li>
+          <li
+            class="flex gap-3 rounded-lg border border-transparent bg-[#0f172a]/50 px-3 py-2.5 transition-all duration-200 ease-out hover:border-[#6366f1]/25 hover:shadow-md hover:shadow-[#6366f1]/10"
+          >
+            <span
+              class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#6366f1]/15 text-[#a5b4fc]"
+              aria-hidden="true"
+            >
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+            </span>
+            <span class="text-sm leading-snug text-[#cbd5e1]"
+              >Improve API test confidence</span
+            >
+          </li>
+          <li
+            class="flex gap-3 rounded-lg border border-transparent bg-[#0f172a]/50 px-3 py-2.5 transition-all duration-200 ease-out hover:border-[#6366f1]/25 hover:shadow-md hover:shadow-[#6366f1]/10"
+          >
+            <span
+              class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#6366f1]/15 text-[#a5b4fc]"
+              aria-hidden="true"
+            >
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            </span>
+            <span class="text-sm leading-snug text-[#cbd5e1]"
+              >No setup, no login</span
+            >
+          </li>
+        </ul>
+      </section>
+
+      <!-- Steps -->
+      <section
+        class="step-strip grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4"
         aria-label="How it works"
       >
         <div
-          class="step-card flex flex-col items-center rounded-xl border border-[#1f2937] bg-[#111827] px-2 py-3 text-center shadow-sm sm:flex-row sm:justify-center sm:gap-2 sm:py-2.5 sm:pl-3 sm:pr-4 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(99,102,241,0.15)]"
+          data-step-card="1"
+          class="step-card step-card-premium flex items-center gap-3 rounded-xl border border-[#1f2937] bg-[#111827]/80 px-3 py-3.5 sm:px-4 sm:py-4"
         >
           <div
-            class="mb-1.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] text-xs font-bold text-white sm:mb-0"
+            class="step-card-icon flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1e293b] text-[#a5b4fc] ring-1 ring-[#334155]"
+            aria-hidden="true"
           >
-            1
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
           </div>
-          <div class="min-w-0 sm:text-left">
-            <p class="text-xs font-semibold leading-tight text-[#e5e7eb]">
-              Swagger
-            </p>
-            <p class="text-[10px] leading-tight text-[#9ca3af] sm:text-[11px]">
-              File or URL
-            </p>
+          <div class="flex min-w-0 flex-1 items-center gap-2.5">
+            <div
+              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] text-xs font-bold text-white shadow-lg shadow-[#6366f1]/25"
+            >
+              1
+            </div>
+            <div class="min-w-0 text-left">
+              <p class="text-sm font-semibold leading-tight text-[#e5e7eb]">
+                Swagger
+              </p>
+              <p class="text-xs leading-tight text-[#94a3b8]">
+                File or URL
+              </p>
+            </div>
           </div>
         </div>
         <div
-          class="step-card flex flex-col items-center rounded-xl border border-[#1f2937] bg-[#111827] px-2 py-3 text-center shadow-sm sm:flex-row sm:justify-center sm:gap-2 sm:py-2.5 sm:pl-3 sm:pr-4 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(99,102,241,0.15)]"
+          data-step-card="2"
+          class="step-card step-card-premium flex items-center gap-3 rounded-xl border border-[#1f2937] bg-[#111827]/80 px-3 py-3.5 sm:px-4 sm:py-4"
         >
           <div
-            class="mb-1.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] text-xs font-bold text-white sm:mb-0"
+            class="step-card-icon flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1e293b] text-[#a5b4fc] ring-1 ring-[#334155]"
+            aria-hidden="true"
           >
-            2
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
           </div>
-          <div class="min-w-0 sm:text-left">
-            <p class="text-xs font-semibold leading-tight text-[#e5e7eb]">
-              Postman
-            </p>
-            <p class="text-[10px] leading-tight text-[#9ca3af] sm:text-[11px]">
-              Collection JSON
-            </p>
+          <div class="flex min-w-0 flex-1 items-center gap-2.5">
+            <div
+              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] text-xs font-bold text-white shadow-lg shadow-[#6366f1]/25"
+            >
+              2
+            </div>
+            <div class="min-w-0 text-left">
+              <p class="text-sm font-semibold leading-tight text-[#e5e7eb]">
+                Postman
+              </p>
+              <p class="text-xs leading-tight text-[#94a3b8]">
+                Collection JSON
+              </p>
+            </div>
           </div>
         </div>
         <div
-          class="step-card flex flex-col items-center rounded-xl border border-[#1f2937] bg-[#111827] px-2 py-3 text-center shadow-sm sm:flex-row sm:justify-center sm:gap-2 sm:py-2.5 sm:pl-3 sm:pr-4 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(99,102,241,0.15)]"
+          data-step-card="3"
+          class="step-card step-card-premium flex items-center gap-3 rounded-xl border border-[#1f2937] bg-[#111827]/80 px-3 py-3.5 sm:px-4 sm:py-4"
         >
           <div
-            class="mb-1.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] text-xs font-bold text-white sm:mb-0"
+            class="step-card-icon flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1e293b] text-[#a5b4fc] ring-1 ring-[#334155]"
+            aria-hidden="true"
           >
-            3
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
           </div>
-          <div class="min-w-0 sm:text-left">
-            <p class="text-xs font-semibold leading-tight text-[#e5e7eb]">
-              Compare
-            </p>
-            <p class="text-[10px] leading-tight text-[#9ca3af] sm:text-[11px]">
-              Run report
-            </p>
+          <div class="flex min-w-0 flex-1 items-center gap-2.5">
+            <div
+              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] text-xs font-bold text-white shadow-lg shadow-[#6366f1]/25"
+            >
+              3
+            </div>
+            <div class="min-w-0 text-left">
+              <p class="text-sm font-semibold leading-tight text-[#e5e7eb]">
+                Compare
+              </p>
+              <p class="text-xs leading-tight text-[#94a3b8]">
+                Run report
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -112,7 +217,7 @@
       <!-- Empty state (slim; ui.js toggles vs #results & input activity) -->
       <div
         id="empty-state"
-        class="empty-state-visible mb-4 rounded-xl border border-dashed border-[#334155]/90 bg-[#111827]/80 px-4 py-3 text-center shadow-inner"
+        class="empty-state-visible mb-5 rounded-xl border border-dashed border-[#334155]/90 bg-[#111827]/60 px-4 py-4 text-center shadow-inner backdrop-blur-sm sm:mb-6 sm:px-5 sm:py-4"
       >
         <p class="text-sm font-medium text-[#e5e7eb]">
           Upload your files to analyze API coverage
@@ -174,7 +279,7 @@
 
       <form
         id="coverage-form"
-        class="rounded-2xl border border-[#1f2937] bg-[#111827] p-4 shadow-[0_0_40px_rgba(99,102,241,0.08)] sm:p-6"
+        class="form-glass scroll-mt-24 rounded-2xl border border-[#1f2937]/90 bg-[#111827]/85 p-5 shadow-[0_0_48px_rgba(99,102,241,0.1)] backdrop-blur-md sm:scroll-mt-28 sm:p-7"
         novalidate
       >
         <div class="mb-4">
@@ -253,7 +358,7 @@
             </p>
             <div
               id="swagger-drop-zone"
-              class="upload-drop-zone group relative flex min-h-[88px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#334155] bg-[#0f172a] px-3 py-3 hover:border-[#6366f1] hover:bg-[rgba(99,102,241,0.05)]"
+              class="upload-drop-zone upload-drop-zone--large group relative flex min-h-[132px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#334155] bg-gradient-to-b from-[#0f172a] to-[#111827] px-5 py-8 hover:border-[#6366f1]/90 sm:min-h-[148px] sm:px-6 sm:py-9"
             >
               <input
                 id="swagger-file"
@@ -299,7 +404,7 @@
           </p>
           <div
             id="collection-drop-zone"
-            class="upload-drop-zone group relative flex min-h-[92px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#334155] bg-[#0f172a] px-3 py-4 hover:border-[#8b5cf6] hover:bg-[rgba(139,92,246,0.05)]"
+            class="upload-drop-zone upload-drop-zone--large group relative flex min-h-[132px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#334155] bg-gradient-to-b from-[#0f172a] to-[#111827] px-5 py-8 hover:border-[#8b5cf6]/90 sm:min-h-[148px] sm:px-6 sm:py-9"
           >
             <input
               id="collection-file"
@@ -585,7 +690,7 @@
           </label>
           <button
             type="submit"
-            class="primary relative flex min-h-[3.25rem] w-full items-center justify-center rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] px-6 py-4 text-lg font-semibold text-white shadow-[0_0_40px_rgba(99,102,241,0.2)] transition-all hover:from-[#4f46e5] hover:to-[#7c3aed] hover:shadow-[0_0_52px_rgba(99,102,241,0.3)] disabled:cursor-not-allowed disabled:opacity-90"
+            class="btn-interactive primary relative flex min-h-[3.25rem] w-full items-center justify-center rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] px-6 py-4 text-lg font-semibold text-white shadow-[0_0_40px_rgba(99,102,241,0.2)] transition-all duration-200 ease-out hover:from-[#4f46e5] hover:to-[#7c3aed] hover:shadow-[0_0_52px_rgba(99,102,241,0.35)] disabled:cursor-not-allowed disabled:opacity-90"
             id="run-btn"
           >
             <span
@@ -626,7 +731,7 @@
 
       <div
         id="results"
-        class="results-panel scroll-mt-20 mt-8 hidden rounded-2xl border border-[#1f2937] bg-[#111827] p-4 sm:scroll-mt-24 sm:p-6"
+        class="results-panel results-panel-glass scroll-mt-20 mt-8 hidden rounded-2xl border border-[#1f2937]/90 bg-[#111827]/90 p-5 backdrop-blur-md sm:scroll-mt-28 sm:p-7"
       >
         <p
           id="openapi-load-notice"
@@ -650,7 +755,7 @@
             <button
               type="button"
               id="download-report-btn"
-              class="hidden w-full shrink-0 rounded-lg border border-[#22c55e]/45 bg-[#22c55e]/15 px-4 py-2.5 text-sm font-semibold text-[#86efac] transition-colors hover:border-[#22c55e]/65 hover:bg-[#22c55e]/25 disabled:opacity-50 sm:w-auto"
+              class="btn-interactive hidden w-full shrink-0 rounded-lg border border-[#22c55e]/45 bg-[#22c55e]/15 px-4 py-2.5 text-sm font-semibold text-[#86efac] transition-all duration-200 ease-out hover:border-[#22c55e]/65 hover:bg-[#22c55e]/25 disabled:opacity-50 sm:w-auto"
               disabled
             >
               Download report (.md)
@@ -658,7 +763,7 @@
           </div>
           <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <div
-              class="metric-card rounded-2xl border border-[#6366f1]/45 bg-[#111827] p-4 text-center shadow-lg shadow-black/20 hover:scale-[1.02] sm:p-5"
+              class="metric-card metric-card-glass rounded-2xl border border-[#6366f1]/40 bg-[#111827]/90 p-4 text-center shadow-lg shadow-black/25 backdrop-blur-sm sm:p-5"
             >
               <div
                 class="text-3xl font-bold tabular-nums text-[#6366f1] sm:text-4xl"
@@ -671,7 +776,7 @@
               </div>
             </div>
             <div
-              class="metric-card rounded-2xl border border-[#22c55e]/45 bg-[#111827] p-4 text-center shadow-lg shadow-black/20 hover:scale-[1.02] sm:p-5"
+              class="metric-card metric-card-glass rounded-2xl border border-[#22c55e]/40 bg-[#111827]/90 p-4 text-center shadow-lg shadow-black/25 backdrop-blur-sm sm:p-5"
             >
               <div
                 class="text-3xl font-bold tabular-nums text-[#22c55e] sm:text-4xl"
@@ -684,7 +789,7 @@
               </div>
             </div>
             <div
-              class="metric-card rounded-2xl border border-[#ef4444]/45 bg-[#111827] p-4 text-center shadow-lg shadow-black/20 hover:scale-[1.02] sm:p-5"
+              class="metric-card metric-card-glass rounded-2xl border border-[#ef4444]/40 bg-[#111827]/90 p-4 text-center shadow-lg shadow-black/25 backdrop-blur-sm sm:p-5"
             >
               <div
                 class="text-3xl font-bold tabular-nums text-[#ef4444] sm:text-4xl"
@@ -697,10 +802,10 @@
               </div>
             </div>
             <div
-              class="metric-card rounded-2xl border border-[#8b5cf6]/45 bg-[#111827] p-4 text-center shadow-lg shadow-black/20 hover:scale-[1.02] sm:p-5"
+              class="metric-card metric-card-glass rounded-2xl border border-[#8b5cf6]/40 bg-[#111827]/90 p-4 text-center shadow-lg shadow-black/25 backdrop-blur-sm sm:p-5"
             >
               <div
-                class="text-3xl font-bold tabular-nums text-[#8b5cf6] sm:text-4xl"
+                class="coverage-pct-value text-3xl font-bold tabular-nums sm:text-4xl"
                 id="m-coverage"
               >
                 0%
@@ -720,7 +825,7 @@
               <span id="coverage-progress-label">0%</span>
             </div>
             <div
-              class="mt-2 h-3 overflow-hidden rounded-full bg-[#1f2937] shadow-inner"
+              class="coverage-progress-track mt-2 h-3 overflow-hidden rounded-full bg-[#1f2937] shadow-inner ring-1 ring-black/20"
               role="progressbar"
               aria-valuemin="0"
               aria-valuemax="100"
@@ -799,21 +904,21 @@
             <button
               type="button"
               data-tab="automated"
-              class="rounded-full border border-[#1f2937] bg-[#0f172a] px-4 py-2 text-sm font-medium text-[#9ca3af] hover:border-[#6366f1]/50 hover:text-[#c7d2fe] active"
+              class="btn-interactive rounded-full border border-[#1f2937] bg-[#0f172a] px-4 py-2 text-sm font-medium text-[#9ca3af] transition-all duration-200 ease-out hover:border-[#6366f1]/50 hover:text-[#c7d2fe] active"
             >
               Matched requests
             </button>
             <button
               type="button"
               data-tab="missing"
-              class="rounded-full border border-[#1f2937] bg-[#0f172a] px-4 py-2 text-sm font-medium text-[#9ca3af] hover:border-[#ef4444]/50 hover:text-red-200"
+              class="btn-interactive rounded-full border border-[#1f2937] bg-[#0f172a] px-4 py-2 text-sm font-medium text-[#9ca3af] transition-all duration-200 ease-out hover:border-[#ef4444]/50 hover:text-red-200"
             >
               Missing from automation
             </button>
             <button
               type="button"
               data-tab="unmatched"
-              class="rounded-full border border-[#1f2937] bg-[#0f172a] px-4 py-2 text-sm font-medium text-[#9ca3af] hover:border-[#f59e0b]/50 hover:text-amber-200"
+              class="btn-interactive rounded-full border border-[#1f2937] bg-[#0f172a] px-4 py-2 text-sm font-medium text-[#9ca3af] transition-all duration-200 ease-out hover:border-[#f59e0b]/50 hover:text-amber-200"
             >
               Not in Swagger
             </button>
@@ -838,11 +943,15 @@
       <footer
         class="mt-8 border-t border-[#1f2937] pt-6 text-center text-sm text-[#9ca3af]"
       >
-        Built for QA &amp; Developers • API Coverage Tool
+        <span class="font-medium text-[#c7d2fe]">TestLens</span>
+        <span class="mx-1.5 text-[#4b5563]" aria-hidden="true">·</span>
+        See what your API tests miss
+        <span class="mx-1.5 text-[#4b5563]" aria-hidden="true">·</span>
+        Built for QA &amp; developers
       </footer>
     </main>
-    <script src="app.js?v=11"></script>
-    <script src="ui.js?v=3"></script>
+    <script src="app.js?v=12"></script>
+    <script src="ui.js?v=5"></script>
     <script src="param-mapping-ui.js?v=1"></script>
   </body>
 </html>
