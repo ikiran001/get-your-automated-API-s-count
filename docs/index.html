@@ -29,7 +29,7 @@
         },
       };
     </script>
-    <link rel="stylesheet" href="styles.css?v=6" />
+    <link rel="stylesheet" href="styles.css?v=8" />
   </head>
   <body
     class="app-shell min-h-screen font-sans text-[#e5e7eb] antialiased"
@@ -739,6 +739,13 @@
           role="status"
         ></p>
 
+        <p
+          id="results-announcer"
+          class="sr-only"
+          aria-live="polite"
+          aria-atomic="true"
+        ></p>
+
         <!-- Results header: actions first for scanability -->
         <section class="mb-6" aria-label="Coverage summary">
           <div
@@ -752,6 +759,9 @@
                 Summary metrics and request lists below.
               </p>
             </div>
+            <div
+              class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end"
+            >
             <button
               type="button"
               id="download-report-btn"
@@ -760,6 +770,25 @@
             >
               Download report (.md)
             </button>
+            <a
+              href="coverage-dashboard/index.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              id="open-dashboard-btn"
+              class="btn-interactive hidden w-full shrink-0 rounded-lg border border-[#22d3ee]/40 bg-[#22d3ee]/10 px-4 py-2.5 text-center text-sm font-semibold text-[#a5f3fc] transition-all duration-200 ease-out hover:border-[#22d3ee]/60 hover:bg-[#22d3ee]/20 sm:w-auto"
+            >
+              Visual dashboard
+            </a>
+            <a
+              href="report/report.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              id="open-printable-report-btn"
+              class="btn-interactive hidden w-full shrink-0 rounded-lg border border-[#f472b6]/40 bg-[#f472b6]/10 px-4 py-2.5 text-center text-sm font-semibold text-[#fbcfe8] transition-all duration-200 ease-out hover:border-[#f472b6]/60 hover:bg-[#f472b6]/20 sm:w-auto"
+            >
+              Chart PDF report
+            </a>
+            </div>
           </div>
           <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <div
@@ -950,8 +979,8 @@
         Built for QA &amp; developers
       </footer>
     </main>
-    <script src="app.js?v=12"></script>
-    <script src="ui.js?v=5"></script>
+    <script src="app.js?v=18"></script>
+    <script src="ui.js?v=7"></script>
     <script src="param-mapping-ui.js?v=1"></script>
   </body>
 </html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>API Coverage Report — TestLens</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="stylesheet" href="report.css?v=2" />
+  </head>
+  <body>
+    <div class="page-actions no-print">
+      <button type="button" id="btn-download-pdf" class="btn-pdf">
+        Download PDF Report
+      </button>
+      <p class="hint">
+        Run Compare on the main TestLens page first — operation paths are saved
+        in this browser and shared with this tab. Then download the PDF.
+      </p>
+    </div>
+
+    <div id="report-capture" class="report-capture">
+      <header class="report-header">
+        <div class="report-brand">TestLens</div>
+        <h1 class="report-title">API Coverage Report</h1>
+        <p class="report-subtitle">Swagger vs Postman</p>
+        <p class="report-meta" id="report-meta"></p>
+      </header>
+
+      <section class="cards" aria-label="Summary">
+        <article class="card card--total">
+          <span class="card__value" id="val-total">282</span>
+          <span class="card__label">Total APIs</span>
+        </article>
+        <article class="card card--covered">
+          <span class="card__value" id="val-covered">113</span>
+          <span class="card__label">Covered APIs</span>
+        </article>
+        <article class="card card--missing">
+          <span class="card__value" id="val-missing">169</span>
+          <span class="card__label">Missing APIs</span>
+        </article>
+        <article class="card card--pct">
+          <span class="card__value" id="val-coverage">40.07%</span>
+          <span class="card__label">Coverage</span>
+        </article>
+      </section>
+
+      <section class="charts-row">
+        <div class="chart-box">
+          <h2 class="section-heading">Covered vs missing</h2>
+          <div class="chart-inner">
+            <canvas id="chart-pie" width="400" height="260"></canvas>
+          </div>
+        </div>
+        <div class="chart-box">
+          <h2 class="section-heading">Swagger vs Postman</h2>
+          <div class="chart-inner">
+            <canvas id="chart-bar" width="400" height="260"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <section class="insights-block">
+        <h2 class="section-heading">Insights</h2>
+        <ul id="insights-list" class="insights-list"></ul>
+      </section>
+
+      <section class="table-block">
+        <h2 class="section-heading">Operations</h2>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Method</th>
+                <th>Path</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <footer class="report-footer">
+        TestLens · Method and path comparison only · Generated for documentation
+      </footer>
+    </div>
+
+    <div id="pdf-status" class="pdf-status no-print" aria-live="polite"></div>
+    <script src="report.js?v=2"></script>
+  </body>
+</html>
