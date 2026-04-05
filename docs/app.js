@@ -273,6 +273,21 @@ function endpointKey(m, p) {
   return m + " " + normalizePath(p);
 }
 
+/** For PDF / exports: human-readable spec source (no effect on coverage math). */
+function deriveReportBaseUrl(openapi, urlTrim) {
+  const t = (urlTrim || "").trim();
+  if (t) return t;
+  if (openapi.servers && openapi.servers[0] && openapi.servers[0].url) {
+    return String(openapi.servers[0].url);
+  }
+  if (openapi.host) {
+    const scheme =
+      openapi.schemes && openapi.schemes.length ? openapi.schemes[0] : "https";
+    return scheme + "://" + openapi.host + (openapi.basePath || "");
+  }
+  return "Uploaded OpenAPI file (no URL)";
+}
+
 function runAnalysis(openapi, collection, options) {
   const { host, halHost, excludeDeprecated } = options;
 
@@ -537,6 +552,7 @@ els.form.addEventListener("submit", async (e) => {
     };
 
     const r = runAnalysis(openapi, collection, options);
+    const urlTrimForReport = els.swaggerUrl.value.trim();
 
     els.mTotalApis.textContent = r.totalApis;
     els.mPostmanTotal.textContent = r.postmanRequestsTotal;
@@ -587,9 +603,55 @@ els.form.addEventListener("submit", async (e) => {
           matchedText: formatEndpointList(r.matchedRequests),
           missingText: formatEndpointList(r.missingApis),
           unmatchedText: formatEndpointList(r.unmatchedRequests),
+          matchedRequests: r.matchedRequests,
+          missingApis: r.missingApis,
+          unmatchedRequests: r.unmatchedRequests,
+          openapi: openapi,
+          excludeDeprecated: options.excludeDeprecated,
+          baseUrl: deriveReportBaseUrl(openapi, urlTrimForReport),
         },
       })
     );
+
+    try {
+      const dashRows = [
+        ...r.automatedApis.map(([method, path]) => ({
+          method,
+          path,
+          status: "covered",
+        })),
+        ...r.missingApis.map(([method, path]) => ({
+          method,
+          path,
+          status: "missing",
+        })),
+      ].sort((a, b) => {
+        const c = a.path.localeCompare(b.path);
+        return c !== 0 ? c : a.method.localeCompare(b.method);
+      });
+      /* localStorage so Visual dashboard / Chart PDF report tabs can read the same run (sessionStorage is per-tab). */
+      localStorage.setItem(
+        "testlens-dashboard",
+        JSON.stringify({
+          totalSwagger: r.totalApis,
+          totalPostman: r.postmanRequestsTotal,
+          covered: r.uniqueAutomated,
+          missing: r.remaining,
+          coveragePct: r.coveragePct,
+          generatedAt: new Date().toISOString(),
+          rows: dashRows,
+        })
+      );
+    } catch {
+      /* private mode / quota */
+    }
+
+    const ann = document.getElementById("results-announcer");
+    if (ann) {
+      ann.textContent = `Comparison complete. ${r.coveragePct.toFixed(
+        1
+      )}% of Swagger operations appear in the Postman collection. Markdown export, visual dashboard, and chart PDF report are available.`;
+    }
   } catch (err) {
     showError(err.message || String(err));
   } finally {

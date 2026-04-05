@@ -395,6 +395,42 @@
     });
   }
 
+  function wireDashboardLink() {
+    var links = [
+      document.getElementById("open-dashboard-btn"),
+      document.getElementById("open-printable-report-btn"),
+    ].filter(Boolean);
+    if (!links.length) return;
+
+    function showLinks(show) {
+      links.forEach(function (link) {
+        link.classList.toggle("hidden", !show);
+      });
+    }
+
+    window.addEventListener("api-coverage-report", function () {
+      showLinks(true);
+    });
+    var form = document.getElementById("coverage-form");
+    if (form) {
+      form.addEventListener(
+        "submit",
+        function () {
+          showLinks(false);
+        },
+        true
+      );
+    }
+    var results = document.getElementById("results");
+    if (results) {
+      new MutationObserver(function () {
+        if (results.classList.contains("hidden")) {
+          showLinks(false);
+        }
+      }).observe(results, { attributes: true, attributeFilter: ["class"] });
+    }
+  }
+
   function wireDropZone(zoneId, inputId, labelId) {
     var zone = document.getElementById(zoneId);
     var input = document.getElementById(inputId);
@@ -445,6 +481,7 @@
 
     wireCoverageInputPanels();
     wireDownloadReport();
+    wireDashboardLink();
     wireListObserver();
     wireTabTitleSync();
     wireCoverageObserver();

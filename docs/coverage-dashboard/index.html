@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>API Coverage Report — TestLens</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="dashboard">
+      <header class="dash-header">
+        <div class="dash-header__brand">
+          <span class="dash-header__logo">TestLens</span>
+        </div>
+        <h1 class="dash-header__title">API Coverage Report</h1>
+        <p class="dash-header__subtitle">Swagger vs Postman Analysis</p>
+        <p class="dash-header__meta" id="report-meta"></p>
+      </header>
+
+      <section class="cards" aria-label="Summary metrics">
+        <article class="metric-card metric-card--total">
+          <div class="metric-card__icon" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M4 6h16M4 12h16M4 18h10" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span class="metric-card__value" id="card-total">282</span>
+          <span class="metric-card__label">Total APIs</span>
+          <span class="metric-card__hint">Swagger operations</span>
+        </article>
+        <article class="metric-card metric-card--covered">
+          <div class="metric-card__icon" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span class="metric-card__value" id="card-covered">113</span>
+          <span class="metric-card__label">Covered APIs</span>
+          <span class="metric-card__hint">In Postman collection</span>
+        </article>
+        <article class="metric-card metric-card--missing">
+          <div class="metric-card__icon" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span class="metric-card__value" id="card-missing">169</span>
+          <span class="metric-card__label">Missing APIs</span>
+          <span class="metric-card__hint">Not in collection</span>
+        </article>
+        <article class="metric-card metric-card--coverage">
+          <div class="metric-card__icon" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span class="metric-card__value" id="card-coverage">40.07%</span>
+          <span class="metric-card__label">Coverage</span>
+          <span class="metric-card__hint">Match rate</span>
+        </article>
+      </section>
+
+      <section class="insights" aria-label="Insights">
+        <h2 class="section-title">Insights</h2>
+        <ul class="insights__list" id="insights-list"></ul>
+      </section>
+
+      <section class="charts" aria-label="Charts">
+        <h2 class="section-title">Visual overview</h2>
+        <div class="charts__grid">
+          <div class="chart-panel">
+            <h3 class="chart-panel__title">Covered vs missing</h3>
+            <div class="chart-panel__canvas">
+              <canvas id="chart-pie" aria-label="Pie chart of covered versus missing APIs"></canvas>
+            </div>
+          </div>
+          <div class="chart-panel">
+            <h3 class="chart-panel__title">Swagger vs Postman volume</h3>
+            <div class="chart-panel__canvas">
+              <canvas id="chart-bar" aria-label="Bar chart comparing Swagger and Postman API counts"></canvas>
+            </div>
+          </div>
+          <div class="chart-panel chart-panel--progress">
+            <h3 class="chart-panel__title">Coverage progress</h3>
+            <div class="progress-block">
+              <div class="progress-block__track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="40" id="progress-bar">
+                <div class="progress-block__fill" id="progress-fill"></div>
+              </div>
+              <span class="progress-block__label" id="progress-label">40.07%</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="table-section" aria-label="API list">
+        <div class="table-section__head">
+          <h2 class="section-title">Operations</h2>
+          <div class="filters" role="group" aria-label="Filter table">
+            <button type="button" class="filter-btn active" data-filter="all">All</button>
+            <button type="button" class="filter-btn" data-filter="covered">Covered only</button>
+            <button type="button" class="filter-btn" data-filter="missing">Missing only</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Method</th>
+                <th>Path</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
+        <p class="table-footnote" id="table-footnote"></p>
+      </section>
+
+      <footer class="dash-footer">
+        <span>TestLens</span> · See what your API tests miss
+      </footer>
+    </div>
+    <script src="script.js?v=2"></script>
+  </body>
+</html>
