@@ -1,0 +1,5 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+Sitemap: https://ikiran001.github.io/get_your_Automated_API-s_count/sitemap.xml
