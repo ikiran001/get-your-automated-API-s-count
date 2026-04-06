@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://ikiran001.github.io/get_your_Automated_API-s_count/</loc>
+    <loc>https://testlens.tech/</loc>
     <lastmod>2026-04-02</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://ikiran001.github.io/get_your_Automated_API-s_count/coverage-dashboard/</loc>
+    <loc>https://testlens.tech/coverage-dashboard/</loc>
     <lastmod>2026-04-02</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ikiran001.github.io/get_your_Automated_API-s_count/report/report.html</loc>
+    <loc>https://testlens.tech/report/report.html</loc>
     <lastmod>2026-04-02</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>

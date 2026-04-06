@@ -2,4 +2,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://ikiran001.github.io/get_your_Automated_API-s_count/sitemap.xml
+Sitemap: https://testlens.tech/sitemap.xml
