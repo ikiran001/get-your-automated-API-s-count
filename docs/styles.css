@@ -453,6 +453,10 @@ details[open] > summary .layout-tip-chevron {
   transform: rotate(90deg);
 }
 
+details.howto-steps[open] > summary .howto-steps-chevron {
+  transform: rotate(90deg);
+}
+
 details.advanced-details[open] > summary .advanced-chevron {
   transform: rotate(90deg);
 }
