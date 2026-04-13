@@ -216,14 +216,15 @@
 
   /**
    * Tall screenshot → multi-page A4 PDF (portrait, mm).
-   * Slices the canvas into one image per page (all drawn at y=0). Using a single
-   * huge image with negative Y offsets breaks many PDF viewers (streaks/tearing
-   * when scrolling).
+   * Page 1 is a cover page with key metrics drawn via jsPDF text APIs.
+   * Pages 2+ are canvas slices (one per page, drawn at y=0) with page number footers.
    */
   function addCanvasToPdf(canvas, fileName) {
     var root = window.jspdf;
     var JsPDF = root && (root.jsPDF || (root.default && root.default.jsPDF));
     if (!JsPDF) throw new Error("jsPDF not loaded");
+
+    var d = mergeData();
 
     var pdf = new JsPDF({
       orientation: "portrait",
@@ -235,36 +236,126 @@
     var pageW = pdf.internal.pageSize.getWidth();
     var pageH = pdf.internal.pageSize.getHeight();
 
+    /* ── Cover page ────────────────────────────────────────────────────── */
+    pdf.setFillColor(255, 255, 255);
+    pdf.rect(0, 0, pageW, pageH, "F");
+
+    // Decorative top band
+    pdf.setFillColor(79, 70, 229);
+    pdf.rect(0, 0, pageW, 18, "F");
+
+    // Brand in band
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(11);
+    pdf.setTextColor(255, 255, 255);
+    pdf.text("TESTLENS", pageW / 2, 11, { align: "center" });
+
+    // Title
+    pdf.setFontSize(30);
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(15, 23, 42);
+    pdf.text("API Coverage", pageW / 2, pageH * 0.33, { align: "center" });
+    pdf.text("Report", pageW / 2, pageH * 0.33 + 13, { align: "center" });
+
+    // Subtitle
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(12);
+    pdf.setTextColor(100, 116, 139);
+    pdf.text("Swagger vs Postman · TestLens", pageW / 2, pageH * 0.33 + 23, { align: "center" });
+
+    // Generated date
+    var dateStr = d.generatedAt
+      ? new Date(d.generatedAt).toLocaleString()
+      : new Date().toLocaleString();
+    pdf.setFontSize(9);
+    pdf.text("Generated " + dateStr, pageW / 2, pageH * 0.33 + 31, { align: "center" });
+
+    // Coverage badge
+    var pct = typeof d.coveragePct === "number" ? d.coveragePct : 0;
+    var pctColor = pct >= 70 ? [22, 163, 74] : pct >= 40 ? [202, 138, 4] : [220, 38, 38];
+    pdf.setFontSize(42);
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(pctColor[0], pctColor[1], pctColor[2]);
+    pdf.text(pct.toFixed(2) + "%", pageW / 2, pageH * 0.56, { align: "center" });
+    pdf.setFontSize(11);
+    pdf.setFont("helvetica", "normal");
+    pdf.setTextColor(100, 116, 139);
+    pdf.text("Coverage", pageW / 2, pageH * 0.56 + 7, { align: "center" });
+
+    // Metric row
+    var mY = pageH * 0.7;
+    var cols = [pageW * 0.2, pageW * 0.5, pageW * 0.8];
+    var vals = [String(d.totalSwagger), String(d.covered), String(d.missing)];
+    var lbls = ["Total APIs", "Covered", "Missing"];
+    var mColors = [[79, 70, 229], [22, 163, 74], [220, 38, 38]];
+    for (var ci = 0; ci < cols.length; ci++) {
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(22);
+      pdf.setTextColor(mColors[ci][0], mColors[ci][1], mColors[ci][2]);
+      pdf.text(vals[ci], cols[ci], mY, { align: "center" });
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(9);
+      pdf.setTextColor(100, 116, 139);
+      pdf.text(lbls[ci], cols[ci], mY + 6, { align: "center" });
+    }
+
+    // Footer line
+    pdf.setDrawColor(226, 232, 240);
+    pdf.setLineWidth(0.4);
+    pdf.line(14, pageH - 16, pageW - 14, pageH - 16);
+    pdf.setFontSize(8);
+    pdf.setTextColor(148, 163, 184);
+    pdf.text("TestLens — API Coverage Report", pageW / 2, pageH - 10, { align: "center" });
+
+    /* ── Content pages (canvas slices) ───────────────────────────────── */
+
     var cw = canvas.width;
     var ch = canvas.height;
     if (cw < 1 || ch < 1) throw new Error("Empty canvas");
 
+    // Reserve 6 mm at bottom of each content page for the footer bar
+    var contentH = pageH - 6;
     var imgHeightMm = (ch / cw) * pageW;
-    var idealSlicePx = (pageH / imgHeightMm) * ch;
+    var idealSlicePx = (contentH / imgHeightMm) * ch;
+
     var slice = document.createElement("canvas");
     slice.width = cw;
     var sctx = slice.getContext("2d");
 
+    var totalContentPages = Math.ceil(ch / Math.max(1, Math.floor(idealSlicePx)));
     var yPx = 0;
-    var first = true;
+    var pageNum = 1;
+
     while (yPx < ch) {
       var remaining = ch - yPx;
-      var h = Math.min(
-        remaining,
-        Math.max(1, Math.floor(idealSlicePx))
-      );
-      slice.height = h;
+      var sliceH = Math.min(remaining, Math.max(1, Math.floor(idealSlicePx)));
+      slice.height = sliceH;
       sctx.setTransform(1, 0, 0, 1, 0, 0);
-      sctx.clearRect(0, 0, cw, h);
-      sctx.drawImage(canvas, 0, yPx, cw, h, 0, 0, cw, h);
+      sctx.clearRect(0, 0, cw, sliceH);
+      sctx.drawImage(canvas, 0, yPx, cw, sliceH, 0, 0, cw, sliceH);
 
-      var sliceHmm = (h / cw) * pageW;
+      var sliceHmm = (sliceH / cw) * pageW;
       var imgData = slice.toDataURL("image/png", 1.0);
 
-      if (!first) pdf.addPage();
-      first = false;
+      pdf.addPage();
+      pdf.setFillColor(255, 255, 255);
+      pdf.rect(0, 0, pageW, pageH, "F");
       pdf.addImage(imgData, "PNG", 0, 0, pageW, sliceHmm);
-      yPx += h;
+
+      // Page number footer
+      pdf.setFontSize(7.5);
+      pdf.setFont("helvetica", "normal");
+      pdf.setTextColor(148, 163, 184);
+      pdf.text(
+        "Page " + pageNum + " of " + totalContentPages,
+        pageW / 2,
+        pageH - 1.5,
+        { align: "center" }
+      );
+      pdf.text("TestLens · API Coverage Report", pageW - 5, pageH - 1.5, { align: "right" });
+
+      yPx += sliceH;
+      pageNum++;
     }
 
     pdf.save(fileName);
