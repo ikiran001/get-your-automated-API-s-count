@@ -216,13 +216,15 @@
 
   /**
    * Tall screenshot → multi-page A4 PDF (portrait, mm).
+   * Slices the canvas into one image per page (all drawn at y=0). Using a single
+   * huge image with negative Y offsets breaks many PDF viewers (streaks/tearing
+   * when scrolling).
    */
   function addCanvasToPdf(canvas, fileName) {
     var root = window.jspdf;
     var JsPDF = root && (root.jsPDF || (root.default && root.default.jsPDF));
     if (!JsPDF) throw new Error("jsPDF not loaded");
 
-    var imgData = canvas.toDataURL("image/png", 1.0);
     var pdf = new JsPDF({
       orientation: "portrait",
       unit: "mm",
@@ -230,24 +232,39 @@
       compress: true,
     });
 
-    var pageWidth = pdf.internal.pageSize.getWidth();
-    var pageHeight = pdf.internal.pageSize.getHeight();
+    var pageW = pdf.internal.pageSize.getWidth();
+    var pageH = pdf.internal.pageSize.getHeight();
 
-    var props = pdf.getImageProperties(imgData);
-    var imgWidth = pageWidth;
-    var imgHeight = (props.height * imgWidth) / props.width;
+    var cw = canvas.width;
+    var ch = canvas.height;
+    if (cw < 1 || ch < 1) throw new Error("Empty canvas");
 
-    var heightLeft = imgHeight;
-    var y = 0;
+    var imgHeightMm = (ch / cw) * pageW;
+    var idealSlicePx = (pageH / imgHeightMm) * ch;
+    var slice = document.createElement("canvas");
+    slice.width = cw;
+    var sctx = slice.getContext("2d");
 
-    pdf.addImage(imgData, "PNG", 0, y, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
+    var yPx = 0;
+    var first = true;
+    while (yPx < ch) {
+      var remaining = ch - yPx;
+      var h = Math.min(
+        remaining,
+        Math.max(1, Math.floor(idealSlicePx))
+      );
+      slice.height = h;
+      sctx.setTransform(1, 0, 0, 1, 0, 0);
+      sctx.clearRect(0, 0, cw, h);
+      sctx.drawImage(canvas, 0, yPx, cw, h, 0, 0, cw, h);
 
-    while (heightLeft > 0) {
-      y = heightLeft - imgHeight;
-      pdf.addPage();
-      pdf.addImage(imgData, "PNG", 0, y, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+      var sliceHmm = (h / cw) * pageW;
+      var imgData = slice.toDataURL("image/png", 1.0);
+
+      if (!first) pdf.addPage();
+      first = false;
+      pdf.addImage(imgData, "PNG", 0, 0, pageW, sliceHmm);
+      yPx += h;
     }
 
     pdf.save(fileName);
@@ -284,12 +301,19 @@
         });
       })
       .then(function () {
+        var w = Math.max(1, capture.scrollWidth);
+        var h = Math.max(1, capture.scrollHeight);
+        var maxDim = 8192;
+        var scale = 2;
+        if (w * scale > maxDim) scale = maxDim / w;
+        if (h * scale > maxDim) scale = Math.min(scale, maxDim / h);
         return html2canvas(capture, {
-          scale: 2,
+          scale: scale,
           useCORS: true,
           allowTaint: false,
           backgroundColor: "#ffffff",
           logging: false,
+          foreignObjectRendering: false,
           windowWidth: capture.scrollWidth,
           windowHeight: capture.scrollHeight,
         });

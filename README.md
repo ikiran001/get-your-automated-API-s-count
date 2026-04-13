@@ -122,21 +122,41 @@ python3 api_coverage.py <swagger_url> <stash_raw_url>
 
 A static UI in `docs/` runs the same comparison **in the browser** (no server; files stay on the user’s machine).
 
+Browsers **cannot** load arbitrary cross-origin `.json` URLs unless the file server sends CORS headers or you use a **proxy**. Public CORS relays often reject internal/beta URLs (you may see errors like “not a valid resource”).
+
+**Reliable options for any public HTTPS OpenAPI URL**
+
+1. **Bundled dev server (best for localhost — recommended)**  
+   - Node 18+: from the repo root run `npm run dev` and open **http://localhost:8080/**.  
+   - The server serves `docs/` and adds **`/__testlens_openapi_proxy?url=…`**: the browser loads the spec **same-origin**, so CORS on the API does not matter.  
+   - This is the fix when public relays return 400/520 for internal beta URLs (e.g. `cbs.beta…`).
+
+2. **Standalone local proxy (port 8787)**  
+   - Run `npm run openapi-proxy`. The app tries `http://localhost:8787` and `http://127.0.0.1:8787` automatically on localhost, or set the proxy field manually.  
+   - Use this if you insist on `python3 -m http.server` for static files (that server has no proxy route).
+
+3. **Your own proxy in production**  
+   - Deploy something like `workers/openapi-proxy-cloudflare.js` (Cloudflare Worker) or any small server that accepts `GET ?url=` and returns the target body with `Access-Control-Allow-Origin: *`.  
+   - Put that worker URL in the **CORS proxy** field on the site. **Do not** expose an open proxy to the public internet without authentication or allowlists.
+
+4. **Upload** the downloaded `openapi.json` (always works).
+
 **What users do**
 
 1. Open the published site.
 2. Upload the Postman collection JSON.
-3. Paste an OpenAPI/Swagger JSON URL **or** upload the spec file. If the API does not send CORS headers, the page falls back to public CORS relays; if those fail, save the spec from the URL and upload it.
-4. Optionally set `{{HOST}}` / `{{HAL_HOST}}` replacements and toggle deprecated endpoints.
+3. Paste an OpenAPI JSON URL **or** upload the spec file. If CORS blocks the URL, set the optional CORS proxy (see above) or upload the file.
+4. Toggle deprecated endpoints as needed.
 5. Run the report and read the summary and lists.
 
 **Run on localhost (quick check)**
 
-From the repo: `cd docs && python3 -m http.server 8080` then open **http://localhost:8080/**. External OpenAPI URLs are still subject to CORS (same as on GitHub Pages); use upload or the built-in relay if direct fetch fails.
+From the repo root: **`npm run dev`** then open **http://localhost:8080/** (includes the OpenAPI proxy).  
+Alternatively: `cd docs && python3 -m http.server 8080` plus **`npm run openapi-proxy`** in another terminal if you need URL paste without the dev server.
 
 **Works on localhost but not on GitHub Pages**
 
-That usually means the OpenAPI server sends CORS for `http://localhost:…` but **not** for `https://<user>.github.io`. Browsers enforce that per origin. Fix: upload the spec file, or ask the API team to allow your Pages origin (or `*` for a public spec). Relays can also behave differently on office networks—try from another network or device.
+That usually means the OpenAPI server sends CORS for `http://localhost:…` but **not** for `https://<user>.github.io`. Use file upload, your own Worker proxy, or ask the API team to allow your Pages origin.
 
 **Host on GitHub (pick one)**
 

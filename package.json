@@ -1,0 +1,12 @@
+{
+  "name": "api-coverage-utility",
+  "private": true,
+  "description": "TestLens browser app + API coverage CLI",
+  "scripts": {
+    "dev": "node tools/dev-server.mjs",
+    "openapi-proxy": "node tools/openapi-cors-proxy.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

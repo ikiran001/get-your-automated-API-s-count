@@ -140,6 +140,49 @@ function isBrowserCorsOrNetworkError(err) {
   );
 }
 
+/** After direct fetch fails, try first-party / public proxies (not invalid JSON shape errors). */
+function shouldRetryOpenApiWithProxies(directErr) {
+  if (isBrowserCorsOrNetworkError(directErr)) return true;
+  const m = String(directErr && directErr.message ? directErr.message : "");
+  return /HTTP \d{3} loading OpenAPI/i.test(m);
+}
+
+/**
+ * Proxy bases to try: form/saved value first, then default local ports on localhost.
+ * Fixes: passing "" from the form used to skip localStorage; users often forget to paste the proxy URL.
+ */
+function buildOpenApiProxyAttemptsList(options) {
+  const explicit =
+    options && typeof options.openApiProxyBase === "string"
+      ? options.openApiProxyBase.trim()
+      : "";
+  const stored = getStoredOpenApiProxyBase().trim();
+  const seen = new Set();
+  const out = [];
+  function add(base) {
+    const b = base.trim().replace(/\/+$/, "");
+    if (!b) return;
+    const key = b.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push(b);
+  }
+  if (explicit) add(explicit);
+  else if (stored) add(stored);
+
+  let host = "";
+  try {
+    host = String(window.location.hostname || "");
+  } catch {
+    host = "";
+  }
+  if (host === "localhost" || host === "127.0.0.1") {
+    add("http://localhost:8787");
+    add("http://127.0.0.1:8787");
+  }
+  return out;
+}
+
 /** User-visible message when URL load fails (never leave bare “Failed to fetch”). */
 function formatOpenApiLoadError(err) {
   const m = String(err && err.message ? err.message : err || "");
@@ -151,8 +194,8 @@ function formatOpenApiLoadError(err) {
   ) {
     return (
       "Could not load the OpenAPI URL from this page (browser blocked cross-origin access, a relay failed, or an extension blocked the request). " +
-      "Reliable fix: open your OpenAPI link in a new tab → Save As → use “Upload OpenAPI JSON”. " +
-      "Also push the latest site from GitHub, hard-refresh (Ctrl+Shift+R or Cmd+Shift+R), and try turning off ad blockers for this page."
+      "Reliable fix: open your spec link in a new tab, wait for the JSON to appear, then Save As (Cmd+S / Ctrl+S) and upload that file in “Upload OpenAPI JSON” (recommended over URL). " +
+      "Or run npm run dev locally. Hard-refresh this page and try turning off ad blockers."
     );
   }
   return m || "Could not load OpenAPI.";
@@ -165,14 +208,97 @@ const FETCH_PROXY_INIT = {
   referrerPolicy: "no-referrer",
 };
 
+/** Reject proxy “success” bodies like corsproxy.io `{"error":"Free usage…"}`. */
+function jsonLooksLikeOpenApiDoc(parsed) {
+  return (
+    parsed &&
+    typeof parsed === "object" &&
+    (typeof parsed.paths === "object" ||
+      typeof parsed.openapi === "string" ||
+      typeof parsed.swagger === "string")
+  );
+}
+
+const OPENAPI_PROXY_STORAGE_KEY = "testlens-openapi-proxy-base";
+
+function getStoredOpenApiProxyBase() {
+  try {
+    return (localStorage.getItem(OPENAPI_PROXY_STORAGE_KEY) || "").trim();
+  } catch {
+    return "";
+  }
+}
+
+/** @returns {string} full proxy URL including ?url= or &url= */
+function buildOpenApiProxyFetchUrl(proxyBase, targetUrl) {
+  const b = proxyBase.trim().replace(/\/+$/, "");
+  if (!b) return "";
+  const sep = b.includes("?") ? "&" : "?";
+  return b + sep + "url=" + encodeURIComponent(targetUrl);
+}
+
+/**
+ * First-party proxy (local Node script or your Worker). Same contract: ?url=encoded spec URL.
+ * @returns {Promise<object>}
+ */
+/**
+ * Same-origin proxy from `npm run dev` (tools/dev-server.mjs).
+ * Avoids CORS entirely: the page and proxy share one origin.
+ */
+async function fetchOpenApiJsonViaSameOriginProxy(trimmed) {
+  const origin = window.location.origin.replace(/\/$/, "");
+  const url =
+    origin +
+    "/__testlens_openapi_proxy?url=" +
+    encodeURIComponent(trimmed);
+  const res = await fetch(url, FETCH_PROXY_INIT);
+  if (!res.ok) {
+    throw new Error(`Dev server proxy HTTP ${res.status}`);
+  }
+  const text = await res.text();
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error("Dev server proxy returned non-JSON.");
+  }
+  if (!jsonLooksLikeOpenApiDoc(parsed)) {
+    throw new Error("Dev server proxy returned non-OpenAPI JSON.");
+  }
+  return parsed;
+}
+
+async function fetchOpenApiJsonViaConfiguredProxy(trimmed, proxyBase) {
+  const proxyUrl = buildOpenApiProxyFetchUrl(proxyBase, trimmed);
+  if (!proxyUrl) throw new Error("Invalid CORS proxy base URL.");
+  const res = await fetch(proxyUrl, FETCH_PROXY_INIT);
+  if (!res.ok) {
+    throw new Error(`CORS proxy returned HTTP ${res.status}.`);
+  }
+  const text = await res.text();
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error("CORS proxy returned non-JSON.");
+  }
+  if (!jsonLooksLikeOpenApiDoc(parsed)) {
+    throw new Error(
+      "CORS proxy returned JSON that is not an OpenAPI document."
+    );
+  }
+  return parsed;
+}
+
 async function fetchOpenApiJsonDirect(trimmed) {
   const res = await fetch(trimmed, FETCH_DIRECT_INIT);
   if (!res.ok) throw new Error(`HTTP ${res.status} loading OpenAPI document.`);
 
   const ct = (res.headers.get("Content-Type") || "").toLowerCase();
   const text = await res.text();
+  let parsed;
   try {
-    return JSON.parse(text);
+    parsed = JSON.parse(text);
   } catch {
     if (!ct.includes("json")) {
       throw new Error(
@@ -181,11 +307,18 @@ async function fetchOpenApiJsonDirect(trimmed) {
     }
     throw new Error("Invalid JSON in OpenAPI response.");
   }
+  if (!jsonLooksLikeOpenApiDoc(parsed)) {
+    throw new Error(
+      "URL returned JSON that is not an OpenAPI document (missing paths / version fields)."
+    );
+  }
+  return parsed;
 }
 
 /**
  * When the spec host omits CORS headers, fetch via a public relay (third party requests your URL).
- * Order: CodeTabs (handles large specs better), then allorigins.
+ * Order: CodeTabs (often works for production URLs), then allorigins.
+ * corsproxy.io is omitted: free tier blocks non-dev origins and returns JSON `{ "error": "…" }`.
  */
 async function fetchOpenApiJsonViaCodetabs(trimmed) {
   const proxyUrl =
@@ -230,21 +363,9 @@ async function fetchOpenApiJsonViaAllOriginsRaw(trimmed) {
   }
 }
 
-async function fetchOpenApiJsonViaCorsProxyIo(trimmed) {
-  const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(trimmed);
-  const res = await fetch(proxyUrl, FETCH_PROXY_INIT);
-  if (!res.ok) throw new Error(`CORS relay HTTP ${res.status}`);
-  const text = await res.text();
-  try {
-    return JSON.parse(text);
-  } catch {
-    throw new Error("CORS relay returned data that is not valid JSON.");
-  }
-}
-
 /**
- * @param {{ allowCorsRelay?: boolean }} [options] — default allows relays when direct fetch fails (CORS/network).
- * @returns {{ json: object, viaProxy: boolean }}
+ * @param {{ allowCorsRelay?: boolean, openApiProxyBase?: string }} [options]
+ * @returns {{ json: object, viaProxy: boolean, proxyKind?: 'user'|'public' }}
  */
 async function fetchOpenApiJson(url, options = {}) {
   const allowCorsRelay = options.allowCorsRelay !== false;
@@ -257,30 +378,63 @@ async function fetchOpenApiJson(url, options = {}) {
     const json = await fetchOpenApiJsonDirect(trimmed);
     return { json, viaProxy: false };
   } catch (directErr) {
-    if (!isBrowserCorsOrNetworkError(directErr)) {
+    if (!shouldRetryOpenApiWithProxies(directErr)) {
       throw directErr;
     }
+
+    let host = "";
+    try {
+      host = String(window.location.hostname || "");
+    } catch {
+      host = "";
+    }
+    if (host === "localhost" || host === "127.0.0.1") {
+      try {
+        const json = await fetchOpenApiJsonViaSameOriginProxy(trimmed);
+        return { json, viaProxy: true, proxyKind: "user" };
+      } catch {
+        /* e.g. python http.server — no /__testlens_openapi_proxy */
+      }
+    }
+
+    const proxyBases = buildOpenApiProxyAttemptsList(options);
+    for (const base of proxyBases) {
+      try {
+        const json = await fetchOpenApiJsonViaConfiguredProxy(trimmed, base);
+        return { json, viaProxy: true, proxyKind: "user" };
+      } catch {
+        /* try next base */
+      }
+    }
+
     if (!allowCorsRelay) {
+      if (proxyBases.length) {
+        throw new Error(
+          "Could not load the spec through your CORS proxy. Run npm run openapi-proxy in the project root (port 8787), or upload the OpenAPI JSON file."
+        );
+      }
       throw directErr;
     }
     const relays = [
       fetchOpenApiJsonViaCodetabs,
       fetchOpenApiJsonViaAllOriginsGet,
       fetchOpenApiJsonViaAllOriginsRaw,
-      fetchOpenApiJsonViaCorsProxyIo,
     ];
     for (const relay of relays) {
       try {
         const json = await relay(trimmed);
-        return { json, viaProxy: true };
+        if (!jsonLooksLikeOpenApiDoc(json)) {
+          continue;
+        }
+        return { json, viaProxy: true, proxyKind: "public" };
       } catch {
         /* try next relay */
       }
     }
     throw new Error(
-      "OpenAPI URL failed: direct request and all public CORS relays failed from " +
+      "OpenAPI URL failed: the browser could not load the spec from " +
         window.location.origin +
-        ". Upload the JSON file, or ask the API team to send Access-Control-Allow-Origin for this origin."
+        ". Easiest fix: open the spec URL in a new tab, save the JSON (Save As), and upload it above (file beats URL). On localhost you can also run npm run dev or npm run openapi-proxy. On GitHub Pages, upload the file or use your own proxy (README)."
     );
   }
 }
@@ -512,6 +666,7 @@ const els = {
   compareStatus: document.getElementById("compare-status"),
   allowCorsRelay: document.getElementById("allow-cors-relay"),
   copyListBtn: document.getElementById("copy-list-btn"),
+  openapiProxyBase: document.getElementById("openapi-cors-proxy-base"),
 };
 
 let lastLists = null;
@@ -704,24 +859,43 @@ els.form.addEventListener("submit", async (e) => {
     let openapi = null;
 
     if (swaggerF && swaggerF.length) {
-      setCompareStatus("Reading your OpenAPI file…");
+      if (urlTrim) {
+        setCompareStatus(
+          "Reading uploaded OpenAPI file (pasted URL ignored when a file is selected)…"
+        );
+      } else {
+        setCompareStatus("Reading your OpenAPI file…");
+      }
       openapi = await readJsonFile(swaggerF[0]);
     } else {
       setCompareStatus("Loading OpenAPI from the URL…");
       let viaProxy = false;
+      let proxyKind = null;
       try {
+        const proxyInput = els.openapiProxyBase
+          ? els.openapiProxyBase.value.trim()
+          : "";
         const loaded = await fetchOpenApiJson(els.swaggerUrl.value, {
           allowCorsRelay: allowRelay,
+          openApiProxyBase: proxyInput,
         });
         openapi = loaded.json;
         viaProxy = loaded.viaProxy;
+        proxyKind = loaded.proxyKind || null;
       } catch (fetchErr) {
+        els.results.classList.add("hidden");
+        lastLists = null;
         showError(formatOpenApiLoadError(fetchErr));
         return;
       }
       if (viaProxy && els.openapiLoadNotice) {
-        els.openapiLoadNotice.textContent =
-          "OpenAPI was loaded through a public CORS relay because the API did not allow a direct browser request. For private specs, download the file and use Upload instead.";
+        if (proxyKind === "user") {
+          els.openapiLoadNotice.textContent =
+            "OpenAPI was loaded through your CORS proxy (the spec server does not allow direct browser access). For private specs you can still use file upload.";
+        } else {
+          els.openapiLoadNotice.textContent =
+            "OpenAPI was loaded through a public relay because the API did not allow a direct browser request. For private specs, download the file and use Upload instead. In DevTools → Network you may see several relay requests; failed or error responses are normal until one returns the real spec. For reliable access, use your own proxy: npm run openapi-proxy and set CORS proxy to http://localhost:8787.";
+        }
         els.openapiLoadNotice.classList.remove("hidden");
       }
     }
@@ -851,3 +1025,23 @@ els.form.addEventListener("submit", async (e) => {
     els.runBtn.disabled = false;
   }
 });
+
+(function hydrateOpenApiProxyField() {
+  const el = document.getElementById("openapi-cors-proxy-base");
+  if (!el) return;
+  try {
+    const s = localStorage.getItem(OPENAPI_PROXY_STORAGE_KEY);
+    if (s && !el.value) el.value = s;
+  } catch {
+    /* private mode */
+  }
+  el.addEventListener("change", function () {
+    try {
+      const v = el.value.trim();
+      if (v) localStorage.setItem(OPENAPI_PROXY_STORAGE_KEY, v);
+      else localStorage.removeItem(OPENAPI_PROXY_STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+  });
+})();
