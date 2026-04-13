@@ -1,6 +1,17 @@
 /**
- * Client-side API coverage: OpenAPI/Swagger paths vs Postman collection.
- * Mirrors api_coverage.py behavior.
+ * TestLens — runs in the browser. It compares two JSON files.
+ *
+ * Plain English:
+ * - File 1 is your API description (OpenAPI / Swagger). It lists paths like "GET /users".
+ * - File 2 is your Postman collection. It lists the requests you automated.
+ * - We check: for each path in the API file, is there a Postman request with the same method and path?
+ * - Then we show numbers (how many match, how many are missing) and three lists you can read or copy.
+ *
+ * If you use a URL for the API file and the browser cannot load it (CORS), we try a few public relay sites.
+ * For private or internal APIs, downloading the JSON and using "Upload" is safer and more reliable.
+ *
+ * The math here is meant to match api_coverage.py in this project.
+ * Paths match by structure: literal segments must match; {any} matches any param name in that slot.
  */
 
 const HTTP_METHODS = new Set([
@@ -232,9 +243,11 @@ async function fetchOpenApiJsonViaCorsProxyIo(trimmed) {
 }
 
 /**
+ * @param {{ allowCorsRelay?: boolean }} [options] — default allows relays when direct fetch fails (CORS/network).
  * @returns {{ json: object, viaProxy: boolean }}
  */
-async function fetchOpenApiJson(url) {
+async function fetchOpenApiJson(url, options = {}) {
+  const allowCorsRelay = options.allowCorsRelay !== false;
   const trimmed = url.replace(/\u00a0/g, " ").trim();
   if (!trimmed) {
     throw new Error("Enter a Swagger/OpenAPI URL or upload a JSON file.");
@@ -245,6 +258,9 @@ async function fetchOpenApiJson(url) {
     return { json, viaProxy: false };
   } catch (directErr) {
     if (!isBrowserCorsOrNetworkError(directErr)) {
+      throw directErr;
+    }
+    if (!allowCorsRelay) {
       throw directErr;
     }
     const relays = [
@@ -269,8 +285,89 @@ async function fetchOpenApiJson(url) {
   }
 }
 
-function endpointKey(m, p) {
-  return m + " " + normalizePath(p);
+/** Path segments: literals, or null for `{param}`. */
+function pathStructureTokens(path) {
+  let p = normalizePath(path || "").trim();
+  if (!p) return [];
+  if (!p.startsWith("/")) p = "/" + p;
+  return p.split("/").filter(Boolean).map((seg) =>
+    seg.startsWith("{") && seg.endsWith("}") && seg.length > 2 ? null : seg
+  );
+}
+
+/**
+ * Spec path vs Postman path: literals must match; `{a}` matches `{b}` or a concrete segment.
+ */
+function swaggerPostmanPathsMatch(swaggerPath, postmanPath) {
+  const s = pathStructureTokens(swaggerPath);
+  const p = pathStructureTokens(postmanPath);
+  if (s.length !== p.length) return false;
+  for (let i = 0; i < s.length; i++) {
+    if (s[i] === null || p[i] === null) continue;
+    if (s[i] !== p[i]) return false;
+  }
+  return true;
+}
+
+function postmanMatchesSwaggerOperation(
+  pm,
+  pp,
+  swaggerMethod,
+  swaggerPath,
+  prefixes
+) {
+  if (String(pm || "").toUpperCase() !== String(swaggerMethod || "").toUpperCase()) {
+    return false;
+  }
+  for (const prefix of prefixes) {
+    const joined = joinServerPathPrefixAndPath(prefix, swaggerPath);
+    if (swaggerPostmanPathsMatch(joined, pp)) return true;
+  }
+  return false;
+}
+
+/**
+ * Path prefixes from OpenAPI servers (3.x) and Swagger 2 basePath.
+ * Always includes "" so paths in `paths` match Postman the same as before.
+ */
+function getServerPathPrefixes(openapi) {
+  const out = new Set([""]);
+  if (!openapi || typeof openapi !== "object") return Array.from(out);
+  if (Array.isArray(openapi.servers)) {
+    for (const s of openapi.servers) {
+      if (!s || typeof s.url !== "string") continue;
+      const raw = s.url.trim();
+      if (!raw) continue;
+      try {
+        const parsed = new URL(raw, "https://placeholder.local/");
+        let pathname = parsed.pathname || "";
+        if (pathname.length > 1 && pathname.endsWith("/")) {
+          pathname = pathname.slice(0, -1);
+        }
+        if (pathname === "/") pathname = "";
+        out.add(pathname);
+      } catch {
+        /* ignore bad server url */
+      }
+    }
+  }
+  if (typeof openapi.basePath === "string" && openapi.basePath.trim()) {
+    let bp = openapi.basePath.trim();
+    if (!bp.startsWith("/")) bp = "/" + bp;
+    if (bp.length > 1 && bp.endsWith("/")) bp = bp.slice(0, -1);
+    if (bp !== "/") out.add(bp);
+  }
+  return Array.from(out);
+}
+
+/** Join OpenAPI server path prefix and a paths-key (e.g. /v1 + /users → /v1/users). */
+function joinServerPathPrefixAndPath(prefix, path) {
+  const raw = (path || "").trim();
+  const pathPart = raw.startsWith("/") ? raw : "/" + raw;
+  let pre = (prefix || "").trim().replace(/\/+$/, "");
+  if (!pre || pre === "/") return pathPart;
+  if (!pre.startsWith("/")) pre = "/" + pre;
+  return pre + pathPart;
 }
 
 /** For PDF / exports: human-readable spec source (no effect on coverage math). */
@@ -292,46 +389,60 @@ function runAnalysis(openapi, collection, options) {
   const { host, halHost, excludeDeprecated } = options;
 
   const swaggerEndpoints = extractSwaggerPaths(openapi, excludeDeprecated);
+  const prefixes = getServerPathPrefixes(openapi);
   const { endpoints: postmanEndpoints, totalRequests } = extractPostmanRequests(
     collection,
     host,
     halHost
   );
 
-  const swaggerSet = new Set(
-    swaggerEndpoints.map(([m, p]) => endpointKey(m, p))
-  );
+  const canonicalOps = swaggerEndpoints.map(([m, p]) => ({ method: m, path: p }));
+
   const postmanPairs = postmanEndpoints.map(([m, p]) => [
     m,
     normalizePath(p),
   ]);
 
-  const coveredUnique = new Set();
-  for (const [m, p] of postmanPairs) {
-    const k = endpointKey(m, p);
-    if (swaggerSet.has(k)) coveredUnique.add(k);
+  const coveredCanonical = new Set();
+  for (let i = 0; i < canonicalOps.length; i++) {
+    const op = canonicalOps[i];
+    for (const [m, p] of postmanPairs) {
+      if (postmanMatchesSwaggerOperation(m, p, op.method, op.path, prefixes)) {
+        coveredCanonical.add(i);
+        break;
+      }
+    }
   }
 
   const missing = [];
-  for (const k of swaggerSet) {
-    if (!coveredUnique.has(k)) {
-      const [method, ...rest] = k.split(" ");
-      missing.push([method, rest.join(" ")]);
+  for (let i = 0; i < canonicalOps.length; i++) {
+    if (!coveredCanonical.has(i)) {
+      missing.push([canonicalOps[i].method, canonicalOps[i].path]);
     }
   }
 
   const matchedRequests = postmanPairs.filter(([m, p]) =>
-    swaggerSet.has(endpointKey(m, p))
+    canonicalOps.some((op) =>
+      postmanMatchesSwaggerOperation(m, p, op.method, op.path, prefixes)
+    )
   );
   const unmatchedRequests = postmanPairs.filter(
-    ([m, p]) => !swaggerSet.has(endpointKey(m, p))
+    ([m, p]) =>
+      !canonicalOps.some((op) =>
+        postmanMatchesSwaggerOperation(m, p, op.method, op.path, prefixes)
+      )
   );
 
-  const totalApis = swaggerSet.size;
-  const uniqueAutomated = coveredUnique.size;
+  const totalApis = canonicalOps.length;
+  const uniqueAutomated = coveredCanonical.size;
   const remaining = missing.length;
   const coveragePct = totalApis ? (uniqueAutomated / totalApis) * 100 : 0;
   const remainingPct = totalApis ? (remaining / totalApis) * 100 : 0;
+
+  const automatedApis = [];
+  for (const i of coveredCanonical) {
+    automatedApis.push([canonicalOps[i].method, canonicalOps[i].path]);
+  }
 
   return {
     totalApis,
@@ -342,10 +453,7 @@ function runAnalysis(openapi, collection, options) {
     remaining,
     coveragePct,
     remainingPct,
-    automatedApis: Array.from(coveredUnique).map((k) => {
-      const [method, ...pathParts] = k.split(" ");
-      return [method, pathParts.join(" ")];
-    }),
+    automatedApis,
     matchedRequests,
     unmatchedRequests,
     missingApis: missing,
@@ -354,6 +462,21 @@ function runAnalysis(openapi, collection, options) {
 
 function formatEndpointList(pairs) {
   return pairs.map(([m, p]) => `${m} ${p}`).join("\n");
+}
+
+function validateOpenApiDocument(openapi) {
+  if (!openapi || typeof openapi !== "object") {
+    return "That file is not a JSON object. Export the spec as OpenAPI JSON.";
+  }
+  const hasVersion =
+    typeof openapi.openapi === "string" || typeof openapi.swagger === "string";
+  if (!openapi.paths || typeof openapi.paths !== "object") {
+    if (!hasVersion) {
+      return "This JSON has no `paths` section. Use an OpenAPI 2.x or 3.x file (it should include `openapi` or `swagger` plus `paths`).";
+    }
+    return "This JSON has no `paths` object. Check that you loaded the full OpenAPI spec.";
+  }
+  return null;
 }
 
 const els = {
@@ -386,9 +509,37 @@ const els = {
   tUnmatched: document.getElementById("t-unmatched"),
   tMissing: document.getElementById("t-missing"),
   openapiLoadNotice: document.getElementById("openapi-load-notice"),
+  compareStatus: document.getElementById("compare-status"),
+  allowCorsRelay: document.getElementById("allow-cors-relay"),
+  copyListBtn: document.getElementById("copy-list-btn"),
 };
 
 let lastLists = null;
+let activeTabName = "automated";
+
+function setCompareStatus(msg) {
+  const el = els.compareStatus;
+  if (!el) return;
+  if (!msg) {
+    el.textContent = "";
+    el.classList.add("hidden");
+    el.setAttribute("aria-hidden", "true");
+    return;
+  }
+  el.textContent = msg;
+  el.classList.remove("hidden");
+  el.setAttribute("aria-hidden", "false");
+}
+
+function plainTextForActiveTab() {
+  if (!lastLists) return "";
+  const map = {
+    automated: formatEndpointList(lastLists.matchedRequests),
+    missing: formatEndpointList(lastLists.missingApis),
+    unmatched: formatEndpointList(lastLists.unmatchedRequests),
+  };
+  return map[activeTabName] || "";
+}
 
 function showError(msg) {
   els.error.textContent = msg;
@@ -465,6 +616,7 @@ function animateCoverageTo(targetPct) {
 }
 
 function setActiveTab(name) {
+  activeTabName = name || "automated";
   els.tabBtns.forEach((b) => {
     b.classList.toggle("active", b.getAttribute("data-tab") === name);
   });
@@ -481,9 +633,39 @@ els.tabBtns.forEach((b) => {
   b.addEventListener("click", () => setActiveTab(b.getAttribute("data-tab")));
 });
 
+if (els.copyListBtn) {
+  els.copyListBtn.addEventListener("click", async () => {
+    const text = plainTextForActiveTab();
+    if (!text) return;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+      const prev = els.copyListBtn.textContent;
+      els.copyListBtn.textContent = "Copied";
+      setTimeout(() => {
+        els.copyListBtn.textContent = prev;
+      }, 1600);
+    } catch {
+      showError("Could not copy to the clipboard.");
+    }
+  });
+}
+
 els.form.addEventListener("submit", async (e) => {
   e.preventDefault();
   clearError();
+  setCompareStatus("");
   els.results.classList.add("hidden");
   lastLists = null;
   if (els.openapiLoadNotice) {
@@ -512,18 +694,25 @@ els.form.addEventListener("submit", async (e) => {
     }
   }
 
+  const allowRelay = els.allowCorsRelay ? els.allowCorsRelay.checked : true;
+
   els.runBtn.disabled = true;
   setCompareButtonLoading(true);
   try {
+    setCompareStatus("Reading your Postman file…");
     const collection = await readJsonFile(collFiles[0]);
     let openapi = null;
 
     if (swaggerF && swaggerF.length) {
+      setCompareStatus("Reading your OpenAPI file…");
       openapi = await readJsonFile(swaggerF[0]);
     } else {
+      setCompareStatus("Loading OpenAPI from the URL…");
       let viaProxy = false;
       try {
-        const loaded = await fetchOpenApiJson(els.swaggerUrl.value);
+        const loaded = await fetchOpenApiJson(els.swaggerUrl.value, {
+          allowCorsRelay: allowRelay,
+        });
         openapi = loaded.json;
         viaProxy = loaded.viaProxy;
       } catch (fetchErr) {
@@ -537,12 +726,13 @@ els.form.addEventListener("submit", async (e) => {
       }
     }
 
-    if (!openapi.paths || typeof openapi.paths !== "object") {
-      showError(
-        "OpenAPI document has no paths object. Use a JSON OpenAPI 2.x/3.x spec."
-      );
+    const specError = validateOpenApiDocument(openapi);
+    if (specError) {
+      showError(specError);
       return;
     }
+
+    setCompareStatus("Comparing OpenAPI to Postman…");
 
     // Postman URL variables ({{HOST}} / {{HAL_HOST}}) inputs removed from UI; default empty.
     const options = {
@@ -652,9 +842,11 @@ els.form.addEventListener("submit", async (e) => {
         1
       )}% of Swagger operations appear in the Postman collection. Markdown export, visual dashboard, and chart PDF report are available.`;
     }
+    setCompareStatus("");
   } catch (err) {
     showError(err.message || String(err));
   } finally {
+    setCompareStatus("");
     setCompareButtonLoading(false);
     els.runBtn.disabled = false;
   }
