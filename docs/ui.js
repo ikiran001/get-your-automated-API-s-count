@@ -1,6 +1,7 @@
 /**
  * UI-only helpers: drag/drop, labels, progress bar, list badges, empty state,
- * search/filter, per-row copy, CSV export, run history, global drop zone.
+ * search/filter, per-row copy, CSV/JSON export, run history, global drop zone,
+ * dark/light toggle, clear-all, sticky header.
  * Does not modify Swagger/Postman parsing or comparison (see app.js).
  */
 (function () {
@@ -775,6 +776,61 @@
 
   /* ── init ────────────────────────────────────────────────────────────── */
 
+  /* ── #61 Dark/Light mode toggle ────────────────────────────────────── */
+
+  function applyTheme(light) {
+    var html = document.documentElement;
+    if (light) {
+      html.classList.add("light-mode");
+    } else {
+      html.classList.remove("light-mode");
+    }
+    var icon = document.querySelector(".theme-toggle-icon");
+    var label = document.querySelector(".theme-toggle-label");
+    if (icon) icon.textContent = light ? "🌙" : "☀️";
+    if (label) label.textContent = light ? "Dark" : "Light";
+    try { localStorage.setItem("testlens-theme", light ? "light" : "dark"); } catch {}
+  }
+
+  function wireThemeToggle() {
+    // Restore saved preference
+    try {
+      var saved = localStorage.getItem("testlens-theme");
+      if (saved === "light") applyTheme(true);
+    } catch {}
+
+    var btn = document.getElementById("theme-toggle");
+    if (!btn) return;
+    btn.addEventListener("click", function () {
+      var isLight = document.documentElement.classList.contains("light-mode");
+      applyTheme(!isLight);
+    });
+  }
+
+  /* ── #65 Sticky results summary (wrap summary section) ──────────────── */
+
+  function wireStickyResultsHeader() {
+    var section = document.querySelector('#results section[aria-label="Coverage summary"]');
+    if (!section) return;
+    section.classList.add("results-sticky-header");
+  }
+
+  /* ── #63 Clear-all event from app.js ────────────────────────────────── */
+
+  function wireClearAll() {
+    window.addEventListener("testlens-cleared", function () {
+      // Reset file name labels
+      setFileNameLabel("swagger-file", "swagger-file-name");
+      setFileNameLabel("collection-file", "collection-file-name");
+      syncCoverageInputPanels();
+      // Hide new buttons
+      ["download-json-btn", "copy-summary-btn", "share-link-btn"].forEach(function (id) {
+        var btn = document.getElementById(id);
+        if (btn) { btn.classList.add("hidden"); btn.disabled = true; }
+      });
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     wireDropZone("swagger-drop-zone", "swagger-file", "swagger-file-name");
     wireDropZone("collection-drop-zone", "collection-file", "collection-file-name");
@@ -792,5 +848,8 @@
     wireSearchFilter();
     wireHistory();
     wireGlobalDropZone();
+    wireThemeToggle();
+    wireStickyResultsHeader();
+    wireClearAll();
   });
 })();
