@@ -54,7 +54,7 @@
         },
       };
     </script>
-    <link rel="stylesheet" href="styles.css?v=11" />
+    <link rel="stylesheet" href="styles.css?v=12" />
   </head>
   <body
     class="app-shell min-h-screen font-sans text-[#e5e7eb] antialiased"
@@ -381,30 +381,25 @@
             class="mt-4 rounded-lg border border-amber-500/25 bg-amber-500/5 px-3 py-2.5 text-xs leading-relaxed text-[#fde68a]"
           >
             <p class="font-semibold text-amber-100">
-              Path parameter names differ between Swagger and Postman?
+              Different path parameter names in Swagger vs Postman?
             </p>
             <p class="mt-1.5 text-[#fcd34d]/95">
-              Example: Swagger
-              <code class="rounded bg-[#0f172a]/90 px-1 text-[#fef3c7]"
-                >/api/{account_id}/v1/endpoint</code
-              >
-              vs Postman
-              <code class="rounded bg-[#0f172a]/90 px-1 text-[#fef3c7]"
-                >/api/{acc_id}/v1/endpoint</code
-              >
-              — open the next section
-              <strong class="text-amber-50"
-                >Important: parameter matching</strong
-              >, add
-              <code class="rounded bg-[#0f172a]/90 px-1">{account_id}</code>
-              →
-              <code class="rounded bg-[#0f172a]/90 px-1">{acc_id}</code>, then
-              run <strong class="text-amber-50">Compare coverage</strong> again.
+              You do <strong class="text-amber-50">not</strong> need to configure
+              anything. TestLens compares paths by
+              <strong class="text-amber-50">method</strong>,
+              <strong class="text-amber-50">segment shape</strong>, and
+              <strong class="text-amber-50">literal text</strong>; a
+              <code class="rounded bg-[#0f172a]/90 px-1 text-[#fef3c7]">{name}</code>
+              in the spec matches the same slot in Postman even if the brace
+              name differs (or Postman uses a real value like
+              <code class="rounded bg-[#0f172a]/90 px-1 text-[#fef3c7]">123</code>).
+              Open
+              <strong class="text-amber-50">How path matching works</strong>
+              below for the full rules.
             </p>
           </div>
         </details>
 
-        <!-- Parameter help sits right under the how-to (same IDs for param-mapping-ui.js) -->
         <details
           id="advanced-coverage-details"
           class="advanced-details mb-5 rounded-xl border border-[#1f2937] border-l-4 border-l-amber-500/55 bg-[#0f172a] text-sm shadow-sm open:pb-1"
@@ -416,227 +411,101 @@
               class="advanced-chevron mr-2 inline-block text-[#a5b4fc] transition-transform duration-200"
               >▸</span
             >
-            <span class="text-[#fcd34d]">Important:</span>
-            parameter matching &amp; optional mappings
+            <span class="text-[#fcd34d]">How path matching works</span>
+            <span class="font-normal text-[#94a3af]">(no setup required)</span>
           </summary>
           <div
-            class="space-y-4 border-t border-[#1f2937] px-3 pb-4 pt-4 sm:px-4"
+            class="space-y-4 border-t border-[#1f2937] px-3 pb-4 pt-4 sm:px-5"
           >
-            <p class="text-sm font-medium leading-relaxed text-[#fde68a]">
-              If Swagger and Postman use
-              <strong class="text-amber-100">different path parameter names</strong>
-              for the same endpoint, coverage can look wrong unless you
-              understand how matching works — or add explicit mappings below.
+            <p class="text-sm leading-relaxed text-[#9ca3af]">
+              Each Swagger <strong class="text-[#e5e7eb]">operation</strong> (HTTP
+              method + path) is compared to each Postman request. There is
+              <strong class="text-[#e5e7eb]">no</strong> manual parameter-mapping
+              form — matching is automatic.
             </p>
-            <p class="text-xs leading-relaxed text-[#9ca3af]">
-              Open this section for the full rules, examples, and optional
-              Swagger ↔ Postman name maps. You can still run Compare without
-              opening it when your path templates already align.
-            </p>
-            <div
-              class="grid gap-4 xl:grid-cols-2 xl:gap-6 xl:items-start"
+            <ul
+              class="list-inside list-disc space-y-2 text-sm leading-relaxed text-[#9ca3af]"
             >
-        <section
-          class="rounded-2xl border border-[#1f2937] bg-[#0f172a] p-4 shadow-sm sm:p-5"
-          aria-labelledby="param-matching-heading"
-        >
-          <div class="mb-3 flex flex-wrap items-center gap-2">
-            <h2
-              id="param-matching-heading"
-              class="text-base font-semibold text-[#e5e7eb] sm:text-lg"
-            >
-              How Parameter Matching Works
-            </h2>
-            <span
-              class="inline-flex h-6 min-w-[1.5rem] cursor-help items-center justify-center rounded-full border border-[#6366f1]/35 bg-[#6366f1]/10 px-1.5 text-xs font-semibold text-[#a5b4fc]"
-              title="All path parameters are normalized to {param} before comparison."
-              tabindex="0"
-              role="note"
-              aria-label="All path parameters are normalized to {param} before comparison."
-              >?</span
-            >
-          </div>
-
-          <p class="text-sm font-medium leading-relaxed text-[#c7d2fe]">
-            This tool automatically normalizes path parameters and also allows
-            optional manual mapping below for advanced use cases.
-          </p>
-
-          <p class="mt-4 text-sm leading-relaxed text-[#9ca3af]">
-            Path parameters in Swagger and Postman may have different names, but
-            represent dynamic values.
-          </p>
-          <p class="mt-3 text-sm leading-relaxed text-[#9ca3af]">
-            This tool normalizes
-            <strong class="font-semibold text-[#e5e7eb]">ALL</strong> path
-            parameters by replacing any
-            <code class="rounded bg-[#0f172a] px-1 py-0.5 font-mono text-[#c7d2fe]"
-              >{parameter_name}</code
-            >
-            with a standard placeholder
-            <code class="rounded bg-[#0f172a] px-1 py-0.5 font-mono text-[#c7d2fe]"
-              >{param}</code
-            >.
-          </p>
-
-          <div
-            class="mt-4 rounded-xl border border-[#1f2937] bg-[#111827] p-3 sm:p-4"
-            role="region"
-            aria-label="Multi-parameter normalization example"
-          >
-            <p class="mb-3 text-xs font-semibold uppercase tracking-wide text-[#9ca3af]">
-              Example: multiple path parameters
-            </p>
-            <div class="grid gap-4 sm:grid-cols-2">
-              <div>
-                <p class="param-explain-label">Swagger</p>
-                <code class="param-explain-path"
-                  >GET /v1/sites/{site_id}/domains/{domain_id}/records/{record_id}</code
-                >
-              </div>
-              <div>
-                <p class="param-explain-label">Postman</p>
-                <code class="param-explain-path"
-                  >GET /v1/sites/{id}/domains/{dom_id}/records/{recId}</code
-                >
-              </div>
-            </div>
-            <p class="param-explain-divider">↓ Normalization ↓</p>
-            <div>
-              <p class="param-explain-label">Both become</p>
-              <code class="param-explain-path"
-                >/v1/sites/{param}/domains/{param}/records/{param}</code
-              >
-            </div>
-            <p class="param-explain-match" role="status">
-              <span aria-hidden="true">✅</span> Treated as MATCH
-            </p>
-          </div>
-
-          <div class="mt-4 border-t border-[#1f2937] pt-4">
-            <p class="text-sm font-semibold text-[#e5e7eb]">
-              Matching is based on:
-            </p>
-            <ul class="mt-2 list-inside list-disc space-y-1.5 text-sm text-[#9ca3af]">
-              <li>HTTP method (GET, POST, etc.)</li>
-              <li>Path structure</li>
-              <li>Number and position of parameters</li>
+              <li>
+                <strong class="text-[#e5e7eb]">Method</strong> must match (GET,
+                POST, etc.).
+              </li>
+              <li>
+                The path is split on <code class="font-mono text-[#c7d2fe]">/</code>.
+                You need the <strong class="text-[#e5e7eb]">same number of
+                segments</strong> in the same order.
+              </li>
+              <li>
+                <strong class="text-[#e5e7eb]">Literal</strong> segments (fixed
+                text like <code class="font-mono text-[#c7d2fe]">v1</code> or
+                <code class="font-mono text-[#c7d2fe]">hosting</code>) must match
+                exactly.
+              </li>
+              <li>
+                A <strong class="text-[#e5e7eb]">template</strong> segment in the
+                spec — anything in braces, e.g.
+                <code class="font-mono text-[#c7d2fe]">{account_id}</code> — matches
+                <strong class="text-[#e5e7eb]">any single</strong> segment in
+                Postman at that position: another name in braces
+                (<code class="font-mono text-[#c7d2fe]">{acc_id}</code>), a
+                Postman variable written with double curly braces (e.g.
+                <code class="font-mono text-[#c7d2fe]">&#123;&#123;var&#125;&#125;</code>),
+                or a
+                concrete value (e.g. a numeric id).
+              </li>
+              <li>
+                If your OpenAPI file defines a
+                <strong class="text-[#e5e7eb]">base path</strong> (Swagger
+                <code class="font-mono text-[#c7d2fe]">basePath</code> or OpenAPI
+                <code class="font-mono text-[#c7d2fe]">servers</code> URL path),
+                that prefix is combined with each path when matching, so Postman
+                can use the full path while the spec splits base + route.
+              </li>
+              <li>
+                One built-in alias:
+                <code class="font-mono text-[#c7d2fe]">{hosting_account_id}</code>
+                is treated like
+                <code class="font-mono text-[#c7d2fe]">{hosting_id}</code> before
+                comparison.
+              </li>
             </ul>
-            <p class="mt-3 text-sm font-medium text-[#c7d2fe]">
-              Parameter names are ignored during comparison.
-            </p>
-          </div>
-
-          <div class="mt-4 border-t border-[#1f2937] pt-4">
-            <p class="text-sm font-semibold text-[#e5e7eb]">Edge case</p>
-            <p class="mt-2 text-sm leading-relaxed text-[#9ca3af]">
-              If the number or position of parameters differs, endpoints will
-              <strong class="font-semibold text-[#fca5a5]">NOT</strong> match.
-            </p>
-            <div class="mt-3 space-y-2">
-              <code class="param-explain-path"
-                >/v1/sites/{param}/domains</code
-              >
-              <p class="param-explain-divider">≠</p>
-              <code class="param-explain-path"
-                >/v1/sites/{param}/domains/{param}</code
-              >
+            <div
+              class="rounded-xl border border-[#1f2937] bg-[#111827] p-3 sm:p-4"
+              role="region"
+              aria-label="Path matching examples"
+            >
+              <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-[#9ca3af]">
+                Examples
+              </p>
+              <ul class="space-y-2 font-mono text-xs text-[#c7d2fe] sm:text-sm">
+                <li>
+                  <span class="text-[#9ca3af]">Swagger</span>
+                  POST /hosting/{account_id}/v1/add_pat<br />
+                  <span class="text-[#9ca3af]">Postman</span>
+                  POST /hosting/{acc_id}/v1/add_pat →
+                  <span class="text-emerald-400">match</span>
+                </li>
+                <li class="pt-1">
+                  <span class="text-[#9ca3af]">Swagger</span>
+                  GET /api/{id}/items<br />
+                  <span class="text-[#9ca3af]">Postman</span>
+                  GET /api/42/items → <span class="text-emerald-400">match</span>
+                </li>
+                <li class="pt-1 border-t border-[#1f2937] pt-2">
+                  <span class="text-[#9ca3af]">Not a match</span> — different
+                  segment count:<br />
+                  /v1/sites/{id}/domains vs /v1/sites/{id}/domains/{id}
+                </li>
+              </ul>
             </div>
-            <p class="param-explain-nomatch" role="status">
-              <span aria-hidden="true">✗</span> NOT a match — different parameter
-              count / structure
+            <p class="text-xs leading-relaxed text-[#6b7280]">
+              <strong class="text-[#9ca3af]">Note:</strong> a template segment in
+              the spec also matches any literal word in that slot (e.g. a path
+              like <code class="font-mono text-[#9ca3af]">/items/delete</code>
+              under <code class="font-mono text-[#9ca3af]">/items/{id}</code>).
+              That is uncommon; if your API uses fixed words where the spec has
+              a parameter, treat coverage as approximate for those routes.
             </p>
-          </div>
-        </section>
-
-        <div
-          class="rounded-2xl border border-[#1f2937] bg-[#0f172a] p-4 sm:p-5"
-          aria-labelledby="param-mapping-heading"
-        >
-          <h3
-            id="param-mapping-heading"
-            class="mb-2 text-sm font-semibold text-[#e5e7eb]"
-          >
-            Path Parameter Mapping (Optional)
-          </h3>
-          <p class="text-sm leading-relaxed text-[#9ca3af]">
-            Optionally map Swagger path parameters to Postman variables when
-            names differ. Example:
-            <code class="font-mono text-[#c7d2fe]">{hosting_id}</code>
-            →
-            <code class="font-mono text-[#c7d2fe]">{hosting_account_id}</code>
-          </p>
-          <p class="mt-2 text-xs text-[#6b7280]">
-            You can add multiple mappings for different endpoints.
-          </p>
-
-          <div
-            id="param-mapping-rows"
-            class="mt-4 flex flex-col gap-3"
-          ></div>
-
-          <button
-            type="button"
-            id="param-mapping-add"
-            class="param-mapping-add-btn mt-3 inline-flex items-center gap-1.5 rounded-lg border border-[#6366f1]/50 bg-[#6366f1]/15 px-3 py-2 text-sm font-medium text-[#a5b4fc] transition-colors hover:border-[#6366f1] hover:bg-[#6366f1]/25"
-          >
-            <span class="text-base leading-none" aria-hidden="true">+</span>
-            Add Mapping
-          </button>
-
-          <p
-            id="param-mapping-dup-warning"
-            class="param-mapping-dup-warning mt-3 hidden text-sm text-amber-300/95"
-            role="status"
-          ></p>
-
-          <p class="mt-4 border-t border-[#1f2937] pt-4 text-xs leading-relaxed text-[#6b7280]">
-            If no mapping is provided, parameters are automatically normalized
-            (e.g.,
-            <code class="font-mono text-[#9ca3af]">{id}</code>
-            →
-            <code class="font-mono text-[#9ca3af]">{param}</code>).
-          </p>
-        </div>
-            </div>
-
-            <template id="param-mapping-row-template">
-              <div
-                class="param-mapping-row flex flex-col gap-2 rounded-lg border border-[#1f2937] bg-[#0f172a] p-3 sm:flex-row sm:items-center sm:gap-3"
-              >
-                <input
-                  type="text"
-                  class="param-mapping-swagger min-w-0 flex-1 rounded-lg border border-[#1f2937] bg-[#111827] px-3 py-2 font-mono text-sm text-[#e5e7eb] placeholder:text-[#6b7280] placeholder:opacity-80 focus:border-[#6366f1] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/25"
-                  placeholder="hosting_id"
-                  autocomplete="off"
-                  aria-label="Swagger parameter name"
-                />
-                <span
-                  class="hidden shrink-0 text-center text-sm font-medium text-[#9ca3af] sm:inline sm:w-8"
-                  aria-hidden="true"
-                  >→</span
-                >
-                <span
-                  class="shrink-0 text-center text-xs font-medium text-[#9ca3af] sm:hidden"
-                  aria-hidden="true"
-                  >→</span
-                >
-                <input
-                  type="text"
-                  class="param-mapping-postman min-w-0 flex-1 rounded-lg border border-[#1f2937] bg-[#111827] px-3 py-2 font-mono text-sm text-[#e5e7eb] placeholder:text-[#6b7280] placeholder:opacity-80 focus:border-[#6366f1] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/25"
-                  placeholder="hosting_account_id"
-                  autocomplete="off"
-                  aria-label="Postman parameter name"
-                />
-                <button
-                  type="button"
-                  class="param-mapping-remove shrink-0 rounded-lg border border-[#ef4444]/30 bg-[#ef4444]/10 px-3 py-2 text-sm font-medium text-red-300 transition-colors hover:border-[#ef4444]/50 hover:bg-[#ef4444]/20"
-                  aria-label="Remove this mapping row"
-                >
-                  ✕
-                </button>
-              </div>
-            </template>
           </div>
         </details>
 
@@ -790,7 +659,7 @@
           class="compare-cta mt-6 rounded-xl border border-[#1f2937] bg-[#0f172a] p-4 sm:p-5"
         >
           <label
-            class="mb-4 flex cursor-pointer items-center gap-2 text-sm text-[#9ca3af]"
+            class="mb-3 flex cursor-pointer items-center gap-2 text-sm text-[#9ca3af]"
           >
             <input
               type="checkbox"
@@ -800,6 +669,27 @@
             />
             Exclude deprecated operations from Swagger
           </label>
+          <label
+            class="mb-4 flex cursor-pointer items-start gap-2 text-sm text-[#9ca3af]"
+          >
+            <input
+              type="checkbox"
+              id="allow-cors-relay"
+              checked
+              class="mt-0.5 h-4 w-4 shrink-0 rounded border-[#374151] bg-[#111827] text-[#6366f1] focus:ring-[#6366f1]/40"
+            />
+            <span>
+              If loading the spec URL fails in the browser, try a public relay
+              (leave off for private specs — use file upload instead)
+            </span>
+          </label>
+          <p
+            id="compare-status"
+            class="compare-status mb-3 hidden min-h-[1.25rem] text-sm text-[#a5b4fc]"
+            role="status"
+            aria-live="polite"
+            aria-hidden="true"
+          ></p>
           <button
             type="submit"
             class="btn-interactive primary relative flex min-h-[3.25rem] w-full items-center justify-center rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] px-6 py-4 text-lg font-semibold text-white shadow-[0_0_40px_rgba(99,102,241,0.2)] transition-all duration-200 ease-out hover:from-[#4f46e5] hover:to-[#7c3aed] hover:shadow-[0_0_52px_rgba(99,102,241,0.35)] disabled:cursor-not-allowed disabled:opacity-90"
@@ -1041,27 +931,38 @@
           </details>
 
           <h2 class="mb-3 text-lg font-semibold text-[#e5e7eb]">Details</h2>
-          <div class="tabs mb-3 flex flex-wrap gap-2">
+          <div
+            class="mb-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
+          >
+            <div class="tabs flex flex-wrap gap-2">
+              <button
+                type="button"
+                data-tab="automated"
+                class="btn-interactive rounded-full border border-[#1f2937] bg-[#0f172a] px-4 py-2 text-sm font-medium text-[#9ca3af] transition-all duration-200 ease-out hover:border-[#6366f1]/50 hover:text-[#c7d2fe] active"
+              >
+                Matched requests
+              </button>
+              <button
+                type="button"
+                data-tab="missing"
+                class="btn-interactive rounded-full border border-[#1f2937] bg-[#0f172a] px-4 py-2 text-sm font-medium text-[#9ca3af] transition-all duration-200 ease-out hover:border-[#ef4444]/50 hover:text-red-200"
+              >
+                Missing from automation
+              </button>
+              <button
+                type="button"
+                data-tab="unmatched"
+                class="btn-interactive rounded-full border border-[#1f2937] bg-[#0f172a] px-4 py-2 text-sm font-medium text-[#9ca3af] transition-all duration-200 ease-out hover:border-[#f59e0b]/50 hover:text-amber-200"
+              >
+                Not in Swagger
+              </button>
+            </div>
             <button
               type="button"
-              data-tab="automated"
-              class="btn-interactive rounded-full border border-[#1f2937] bg-[#0f172a] px-4 py-2 text-sm font-medium text-[#9ca3af] transition-all duration-200 ease-out hover:border-[#6366f1]/50 hover:text-[#c7d2fe] active"
+              id="copy-list-btn"
+              class="btn-interactive shrink-0 rounded-xl border border-[#374151] bg-[#111827] px-4 py-2 text-sm font-medium text-[#e5e7eb] hover:border-[#6366f1]/50 hover:text-[#c7d2fe] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6366f1]/40"
             >
-              Matched requests
-            </button>
-            <button
-              type="button"
-              data-tab="missing"
-              class="btn-interactive rounded-full border border-[#1f2937] bg-[#0f172a] px-4 py-2 text-sm font-medium text-[#9ca3af] transition-all duration-200 ease-out hover:border-[#ef4444]/50 hover:text-red-200"
-            >
-              Missing from automation
-            </button>
-            <button
-              type="button"
-              data-tab="unmatched"
-              class="btn-interactive rounded-full border border-[#1f2937] bg-[#0f172a] px-4 py-2 text-sm font-medium text-[#9ca3af] transition-all duration-200 ease-out hover:border-[#f59e0b]/50 hover:text-amber-200"
-            >
-              Not in Swagger
+              Copy list
             </button>
           </div>
           <h3
@@ -1091,8 +992,7 @@
         Built for QA &amp; developers
       </footer>
     </main>
-    <script src="app.js?v=18"></script>
+    <script src="app.js?v=20"></script>
     <script src="ui.js?v=7"></script>
-    <script src="param-mapping-ui.js?v=1"></script>
   </body>
 </html>

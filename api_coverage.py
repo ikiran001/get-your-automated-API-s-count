@@ -101,24 +101,134 @@ def normalize_path(path):
     """
     Normalize path parameters to Swagger style: {{id}} -> {id}.
 
-    IMPORTANT: If your Postman collection uses a different variable name
-    than Swagger, map it here.
+    Paths are compared structurally (see path_structure_tokens): literal
+    segments must match; {any_name} matches any other {other_name} in the
+    same position (e.g. Swagger {account_id} vs Postman {acc_id}).
 
-    Example mapping:
-      Swagger uses {hosting_id}
-      Postman uses {hosting_account_id}
-
-    We treat them as the same like this:
-      path = path.replace("{hosting_account_id}", "{hosting_id}")
-
-    Add more replacements below if needed.
+    Extra alias (still applied before structural compare):
+      {hosting_account_id} -> {hosting_id}
     """
     if not path:
         return ""
     path = re.sub(r"\{\{([^}]+)\}\}", r"{\1}", path)
-    # Treat hosting_id and hosting_account_id as equivalent
     path = path.replace("{hosting_account_id}", "{hosting_id}")
     return path
+
+
+def path_structure_tokens(path: str):
+    """
+    Split a path into a tuple of segments: fixed strings, or None for a
+    {parameter} placeholder.
+    """
+    normalized = normalize_path(path).strip()
+    if not normalized:
+        return tuple()
+    if not normalized.startswith("/"):
+        normalized = "/" + normalized
+    parts = [p for p in normalized.split("/") if p]
+    tokens = []
+    for part in parts:
+        if len(part) >= 2 and part.startswith("{") and part.endswith("}"):
+            tokens.append(None)
+        else:
+            tokens.append(part)
+    return tuple(tokens)
+
+
+def swagger_postman_paths_match(swagger_path: str, postman_path: str) -> bool:
+    """
+    True if the two paths are the same route: literals must match; a {param}
+    in Swagger matches any single segment in Postman (another {name} or a
+    concrete value like 123).
+    """
+    spec_t = path_structure_tokens(swagger_path)
+    req_t = path_structure_tokens(postman_path)
+    if len(spec_t) != len(req_t):
+        return False
+    for spec_seg, req_seg in zip(spec_t, req_t):
+        if spec_seg is None or req_seg is None:
+            continue
+        if spec_seg != req_seg:
+            return False
+    return True
+
+
+def join_server_prefix_and_path(prefix: str, path: str) -> str:
+    """Same rules as docs/app.js: OpenAPI base path + paths key."""
+    raw = (path or "").strip()
+    path_part = raw if raw.startswith("/") else "/" + raw
+    pre = (prefix or "").strip().rstrip("/")
+    if not pre or pre == "/":
+        return path_part
+    if not pre.startswith("/"):
+        pre = "/" + pre
+    return pre + path_part
+
+
+def get_server_path_prefixes(swagger_json: dict):
+    """Path prefixes from OpenAPI servers[] and Swagger 2 basePath; always ''."""
+    out = {""}
+    if not isinstance(swagger_json, dict):
+        return sorted(out)
+    for s in swagger_json.get("servers") or []:
+        if not isinstance(s, dict):
+            continue
+        url = (s.get("url") or "").strip()
+        if not url:
+            continue
+        try:
+            parsed = urlparse(url)
+            pathname = parsed.path or ""
+            if len(pathname) > 1 and pathname.endswith("/"):
+                pathname = pathname[:-1]
+            if pathname == "/":
+                pathname = ""
+            out.add(pathname)
+        except Exception:
+            continue
+    bp = swagger_json.get("basePath")
+    if isinstance(bp, str) and bp.strip():
+        bp = bp.strip()
+        if not bp.startswith("/"):
+            bp = "/" + bp
+        if len(bp) > 1 and bp.endswith("/"):
+            bp = bp[:-1]
+        if bp != "/":
+            out.add(bp)
+    return sorted(out)
+
+
+def swagger_operation_covered(
+    method: str,
+    swagger_path: str,
+    prefixes,
+    postman_endpoints,
+) -> bool:
+    """True if some Postman request matches this op (structural + server prefix variants)."""
+    for pm, pp in postman_endpoints:
+        if pm.upper() != method.upper():
+            continue
+        for prefix in prefixes:
+            joined = join_server_prefix_and_path(prefix, swagger_path)
+            if swagger_postman_paths_match(joined, pp):
+                return True
+    return False
+
+
+def postman_request_matches_swagger(
+    pm: str,
+    pp: str,
+    swagger_endpoints,
+    prefixes,
+) -> bool:
+    for sm, sp in swagger_endpoints:
+        if sm.upper() != pm.upper():
+            continue
+        for prefix in prefixes:
+            joined = join_server_prefix_and_path(prefix, sp)
+            if swagger_postman_paths_match(joined, pp):
+                return True
+    return False
 
 
 def normalize_postman_url(raw_url, url_obj):
@@ -198,26 +308,40 @@ def main():
         swagger_json, exclude_deprecated=EXCLUDE_DEPRECATED
     )
     postman_endpoints, postman_requests_total = extract_postman_requests(postman_json)
+    prefixes = get_server_path_prefixes(swagger_json)
 
-    # Convert to sets for easy comparison
-    swagger_set = set((m, normalize_path(p)) for m, p in swagger_endpoints)
-    postman_set = set(postman_endpoints)
+    covered_swagger = [
+        (m, normalize_path(p))
+        for m, p in swagger_endpoints
+        if swagger_operation_covered(m, p, prefixes, postman_endpoints)
+    ]
+    covered_set = set(covered_swagger)
+    missing = [
+        (m, normalize_path(p))
+        for m, p in swagger_endpoints
+        if (m, normalize_path(p)) not in covered_set
+    ]
+    covered_unique = set(covered_swagger)
 
-    covered_unique = swagger_set.intersection(postman_set)
-    missing = swagger_set.difference(postman_set)
-
-    # Count each Postman request item as a separate automated endpoint
-    matched_requests = [ep for ep in postman_endpoints if ep in swagger_set]
-    unmatched_requests = [ep for ep in postman_endpoints if ep not in swagger_set]
+    matched_requests = [
+        ep
+        for ep in postman_endpoints
+        if postman_request_matches_swagger(ep[0], ep[1], swagger_endpoints, prefixes)
+    ]
+    unmatched_requests = [
+        ep
+        for ep in postman_endpoints
+        if not postman_request_matches_swagger(ep[0], ep[1], swagger_endpoints, prefixes)
+    ]
 
     print("\n====== API AUTOMATION COVERAGE REPORT ======")
-    print(f"Total APIs in Swagger: {len(swagger_set)}")
+    total_apis = len(swagger_endpoints)
+    print(f"Total APIs in Swagger: {total_apis}")
     print(f"Total API requests in Postman collection: {postman_requests_total}")
     print(f"Automated API requests (matched to Swagger): {len(matched_requests)}")
     print(f"Postman requests not in Swagger: {len(unmatched_requests)}")
     print(f"Remaining Swagger APIs (not covered): {len(missing)}")
 
-    total_apis = len(swagger_set)
     unique_automated = len(covered_unique)
     remaining_apis = len(missing)
     coverage_pct = (unique_automated / total_apis * 100) if total_apis else 0
