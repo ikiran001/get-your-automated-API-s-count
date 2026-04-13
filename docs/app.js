@@ -813,6 +813,22 @@ function runAnalysis(openapi, collection, options) {
     automatedApis.push([canonicalOps[i].method, canonicalOps[i].path]);
   }
 
+  // Compute per-folder stats (collection folders with zero coverage)
+  const folderStats = {};
+  for (const [, , folder] of postmanPairs) {
+    const key = folder || "";
+    if (!key) continue;
+    if (!folderStats[key]) folderStats[key] = { total: 0, covered: 0 };
+    folderStats[key].total++;
+  }
+  for (const [, , folder] of matchedRequests) {
+    const key = folder || "";
+    if (key && folderStats[key]) folderStats[key].covered++;
+  }
+  const untestedFolders = Object.entries(folderStats)
+    .filter(([, s]) => s.covered === 0 && s.total > 0)
+    .map(([name, s]) => ({ name, total: s.total }));
+
   return {
     totalApis,
     postmanRequestsTotal: totalRequests,
@@ -826,6 +842,7 @@ function runAnalysis(openapi, collection, options) {
     matchedRequests,
     unmatchedRequests,
     missingApis: missing,
+    untestedFolders,
   };
 }
 
@@ -894,7 +911,9 @@ const els = {
 };
 
 let lastLists = null;
+let lastResult = null;
 let activeTabName = "automated";
+const ORIG_TITLE = document.title;
 
 function setCompareStatus(msg) {
   const el = els.compareStatus;
@@ -1051,6 +1070,179 @@ if (els.copyListBtn) {
   });
 }
 
+/* ── #62 Keyboard shortcut: Ctrl+Enter / Cmd+Enter ──────────────────── */
+document.addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && (e.key === "Enter")) {
+    e.preventDefault();
+    if (els.runBtn && !els.runBtn.disabled) {
+      els.form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    }
+  }
+});
+
+/* ── #63 Clear all button ────────────────────────────────────────────── */
+const clearAllBtn = document.getElementById("clear-all-btn");
+if (clearAllBtn) {
+  clearAllBtn.addEventListener("click", () => {
+    // Reset file inputs
+    if (els.swaggerFile) { els.swaggerFile.value = ""; els.swaggerFile.dispatchEvent(new Event("change", { bubbles: true })); }
+    if (els.collectionFile) { els.collectionFile.value = ""; els.collectionFile.dispatchEvent(new Event("change", { bubbles: true })); }
+    // Reset URL input
+    if (els.swaggerUrl) els.swaggerUrl.value = "";
+    // Hide results
+    if (els.results) els.results.classList.add("hidden");
+    lastLists = null;
+    lastResult = null;
+    clearError();
+    setCompareStatus("");
+    // Reset title
+    document.title = ORIG_TITLE;
+    // Hide trend
+    const trendEl = document.getElementById("coverage-trend");
+    if (trendEl) { trendEl.textContent = ""; trendEl.className = "mt-1 hidden text-xs font-semibold"; }
+    // Hide untested folders
+    const uf = document.getElementById("untested-folders-section");
+    if (uf) uf.classList.add("hidden");
+    // Clear URL hash
+    if (history.replaceState) history.replaceState(null, "", window.location.pathname + window.location.search);
+    // Notify ui.js
+    window.dispatchEvent(new CustomEvent("testlens-cleared"));
+  });
+}
+
+/* ── #71 Shareable link: read hash on load ───────────────────────────── */
+(function readSharedHash() {
+  try {
+    const hash = window.location.hash.slice(1);
+    if (!hash.startsWith("r=")) return;
+    const parts = hash.slice(2).split(":");
+    if (parts.length < 4) return;
+    const [pct, total, covered, missing] = parts.map(Number);
+    if (isNaN(pct) || isNaN(total)) return;
+    const banner = document.getElementById("shared-result-banner");
+    if (banner) {
+      banner.querySelector("strong").textContent =
+        `Shared result: ${pct.toFixed(1)}% coverage — ${covered}/${total} covered, ${missing} missing.`;
+      banner.classList.remove("hidden");
+    }
+    const dismiss = document.getElementById("dismiss-shared-banner");
+    if (dismiss) dismiss.addEventListener("click", () => banner.classList.add("hidden"));
+  } catch { /* ignore */ }
+})();
+
+/* ── #72 JSON export ─────────────────────────────────────────────────── */
+const dlJsonBtn = document.getElementById("download-json-btn");
+if (dlJsonBtn) {
+  dlJsonBtn.addEventListener("click", () => {
+    if (!lastResult) return;
+    const data = {
+      generatedAt: new Date().toISOString(),
+      totalApis: lastResult.totalApis,
+      covered: lastResult.uniqueAutomated,
+      missing: lastResult.remaining,
+      coveragePct: parseFloat(lastResult.coveragePct.toFixed(2)),
+      collectionRequestsTotal: lastResult.postmanRequestsTotal,
+      matchedRequests: lastResult.matchedRequests.map(([m, p, f]) => ({ method: m, path: p, folder: f || null })),
+      missingApis: lastResult.missingApis.map(([m, p]) => ({ method: m, path: p })),
+      extraRequests: lastResult.unmatchedRequests.map(([m, p, f]) => ({ method: m, path: p, folder: f || null })),
+      untestedFolders: lastResult.untestedFolders,
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `testlens-coverage-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+}
+
+/* ── #74 Copy summary button ─────────────────────────────────────────── */
+const copySummaryBtn = document.getElementById("copy-summary-btn");
+if (copySummaryBtn) {
+  copySummaryBtn.addEventListener("click", async () => {
+    if (!lastResult) return;
+    const r = lastResult;
+    const text = [
+      `Coverage: ${r.coveragePct.toFixed(2)}%`,
+      `Total APIs: ${r.totalApis}`,
+      `Covered: ${r.uniqueAutomated}`,
+      `Missing: ${r.remaining}`,
+      `Extra (not in spec): ${r.unmatchedCount}`,
+      `Collection requests: ${r.postmanRequestsTotal}`,
+    ].join(" | ");
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = text; ta.style.cssText = "position:fixed;left:-9999px"; document.body.appendChild(ta);
+        ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
+      }
+      const orig = copySummaryBtn.textContent;
+      copySummaryBtn.textContent = "Copied ✓";
+      setTimeout(() => { copySummaryBtn.textContent = orig; }, 1600);
+    } catch { showError("Could not copy to clipboard."); }
+  });
+}
+
+/* ── #71 Share link button ───────────────────────────────────────────── */
+const shareLinkBtn = document.getElementById("share-link-btn");
+if (shareLinkBtn) {
+  shareLinkBtn.addEventListener("click", async () => {
+    if (!lastResult) return;
+    const r = lastResult;
+    const hash = `#r=${r.coveragePct.toFixed(2)}:${r.totalApis}:${r.uniqueAutomated}:${r.remaining}`;
+    const url = window.location.origin + window.location.pathname + hash;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = url; ta.style.cssText = "position:fixed;left:-9999px"; document.body.appendChild(ta);
+        ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
+      }
+      if (history.replaceState) history.replaceState(null, "", hash);
+      const orig = shareLinkBtn.textContent;
+      shareLinkBtn.textContent = "Link copied ✓";
+      setTimeout(() => { shareLinkBtn.textContent = orig; }, 2000);
+    } catch { showError("Could not copy share link."); }
+  });
+}
+
+/* ── #73 Slack/Teams webhook ─────────────────────────────────────────── */
+const WEBHOOK_STORAGE_KEY = "testlens-webhook-url";
+const webhookInput = document.getElementById("webhook-url");
+if (webhookInput) {
+  try { const saved = localStorage.getItem(WEBHOOK_STORAGE_KEY); if (saved) webhookInput.value = saved; } catch {}
+  webhookInput.addEventListener("change", () => {
+    try {
+      const v = webhookInput.value.trim();
+      if (v) localStorage.setItem(WEBHOOK_STORAGE_KEY, v); else localStorage.removeItem(WEBHOOK_STORAGE_KEY);
+    } catch {}
+  });
+}
+
+async function sendWebhookNotification(r) {
+  const input = document.getElementById("webhook-url");
+  const statusEl = document.getElementById("webhook-status");
+  const url = (input && input.value.trim()) || "";
+  if (!url) return;
+  const payload = {
+    text: `TestLens Coverage Report: *${r.coveragePct.toFixed(2)}%* — ${r.uniqueAutomated}/${r.totalApis} APIs covered, ${r.remaining} missing, ${r.unmatchedCount} extra.`,
+  };
+  if (statusEl) { statusEl.textContent = "Sending…"; statusEl.className = "min-h-[1rem] text-xs text-[#6b7280]"; }
+  try {
+    await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (statusEl) { statusEl.textContent = "✓ Notification sent!"; statusEl.className = "min-h-[1rem] text-xs webhook-success"; }
+  } catch (err) {
+    if (statusEl) { statusEl.textContent = `⚠ Could not send: ${err.message || "network error"}. Check CORS / webhook URL.`; statusEl.className = "min-h-[1rem] text-xs webhook-error"; }
+  }
+}
+
 els.form.addEventListener("submit", async (e) => {
   e.preventDefault();
   clearError();
@@ -1193,9 +1385,54 @@ els.form.addEventListener("submit", async (e) => {
       missingApis: r.missingApis,
       unmatchedRequests: r.unmatchedRequests,
     };
+    lastResult = r;
     setActiveTab("automated");
     els.results.classList.remove("hidden");
     animateCoverageTo(r.coveragePct);
+
+    // #64 — Update browser tab title
+    document.title = `${r.coveragePct.toFixed(0)}% — TestLens`;
+
+    // #70 — Coverage trend vs last run in history
+    try {
+      const hist = JSON.parse(localStorage.getItem("testlens-run-history") || "[]");
+      const trendEl = document.getElementById("coverage-trend");
+      if (trendEl && hist.length >= 1) {
+        const prev = hist[0].coveragePct; // hist[0] is the run we just saved (current)
+        // Use hist[1] as the truly previous run
+        const prevRun = hist[1];
+        if (prevRun) {
+          const delta = r.coveragePct - prevRun.coveragePct;
+          const sign = delta > 0.05 ? "↑" : delta < -0.05 ? "↓" : "→";
+          const cls = delta > 0.05 ? "trend-up" : delta < -0.05 ? "trend-down" : "trend-flat";
+          trendEl.textContent = `${sign} ${Math.abs(delta).toFixed(1)}% vs last run`;
+          trendEl.className = `mt-1 text-xs font-semibold ${cls}`;
+          trendEl.classList.remove("hidden");
+        }
+      }
+    } catch { /* ignore */ }
+
+    // #68 — Untested folders
+    try {
+      const ufSection = document.getElementById("untested-folders-section");
+      const ufList = document.getElementById("untested-folders-list");
+      if (ufSection && ufList) {
+        if (r.untestedFolders && r.untestedFolders.length) {
+          ufList.innerHTML = r.untestedFolders.map(f =>
+            `<span class="untested-folder-chip">📁 ${f.name} <span class="opacity-60">(${f.total})</span></span>`
+          ).join("");
+          ufSection.classList.remove("hidden");
+        } else {
+          ufSection.classList.add("hidden");
+        }
+      }
+    } catch { /* ignore */ }
+
+    // Show new export/share buttons
+    ["download-json-btn", "copy-summary-btn", "share-link-btn"].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) { btn.classList.remove("hidden"); btn.disabled = false; }
+    });
 
     requestAnimationFrame(function () {
       var reduce =
@@ -1281,6 +1518,9 @@ els.form.addEventListener("submit", async (e) => {
       localStorage.setItem(histKey, JSON.stringify(hist));
       window.dispatchEvent(new CustomEvent("testlens-history-updated"));
     } catch { /* quota / private mode */ }
+
+    // #73 — Slack/Teams webhook notification
+    sendWebhookNotification(r);
 
     const ann = document.getElementById("results-announcer");
     if (ann) {

@@ -754,3 +754,282 @@ details.advanced-details[open] > summary .advanced-chevron {
   box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25) !important;
   --tw-ring-width: 0 !important;
 }
+
+/* ── Dark/Light mode ─────────────────────────────────────────────────── */
+
+/* ---------- Light mode palette ---------- */
+html.light-mode {
+  --bg-primary:    #f0f4f8;
+  --bg-secondary:  #ffffff;
+  --bg-card:       #f8fafc;
+  --border:        #dde3ec;
+  --text-primary:  #1e293b;
+  --text-secondary:#475569;
+}
+
+/* Body gradient */
+html.light-mode body.app-shell {
+  background-color: #e8edf5;
+  background-image:
+    radial-gradient(ellipse 120% 60% at 50% -20%, rgba(99,102,241,0.10), transparent 55%),
+    radial-gradient(circle at 85% 10%, rgba(139,92,246,0.06), transparent 40%);
+  color: #1e293b;
+}
+
+/* ── Outer shell ── */
+html.light-mode .main-glass {
+  background: rgba(255,255,255,0.96) !important;
+  border-color: #dde3ec !important;
+  box-shadow: 0 4px 24px rgba(99,102,241,0.08), 0 1px 4px rgba(0,0,0,0.06) !important;
+}
+
+/* ── Hero band ── */
+html.light-mode .hero-band {
+  background: rgba(240,244,248,0.90) !important;
+  border-color: #dde3ec !important;
+}
+
+/* Force ALL dark-background containers to white/near-white */
+html.light-mode .form-glass,
+html.light-mode .results-panel,
+html.light-mode [class*="bg-\[\#0f172a\]"],
+html.light-mode [class*="bg-\[\#111827\]"],
+html.light-mode [class*="bg-\[\#0b0f1a\]"] {
+  background-color: #ffffff !important;
+  border-color: #dde3ec !important;
+}
+
+/* Step cards & feature tiles inside hero */
+html.light-mode .hero-band [class*="rounded"],
+html.light-mode .hero-band [class*="border"] {
+  background-color: #ffffff !important;
+  border-color: #dde3ec !important;
+  color: #1e293b !important;
+}
+
+/* Any element that has an inline dark bg class */
+html.light-mode * [class*="bg-\[\#0f172a\]"],
+html.light-mode * [class*="bg-\[\#111827\]"],
+html.light-mode * [class*="bg-\[\#0b0f1a\]"] {
+  background-color: #f8fafc !important;
+}
+
+/* Metric cards */
+html.light-mode .metric-card,
+html.light-mode .metric-card-glass {
+  background: #ffffff !important;
+  border-color: rgba(99,102,241,0.20) !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06) !important;
+}
+
+/* ── Text colours ── */
+html.light-mode h1,
+html.light-mode h2,
+html.light-mode h3,
+html.light-mode h4,
+html.light-mode p,
+html.light-mode li,
+html.light-mode label,
+html.light-mode span:not(.text-gradient-brand):not([class*="text-\[\#6366f1\]"]):not([class*="text-\[\#8b5cf6\]"]):not([class*="text-\[\#22c55e\]"]):not([class*="text-\[\#ef4444\]"]):not([class*="text-\[\#f59e0b\]"]):not([class*="text-\[\#22d3ee\]"]):not([class*="text-\[\#f472b6\]"]) {
+  color: #1e293b;
+}
+
+/* Muted text */
+html.light-mode [class*="text-\[\#9ca3af\]"],
+html.light-mode [class*="text-\[\#6b7280\]"],
+html.light-mode [class*="text-\[\#94a3b8\]"],
+html.light-mode [class*="text-\[\#4b5563\]"] {
+  color: #64748b !important;
+}
+
+/* Light text forced to dark */
+html.light-mode [class*="text-\[\#e5e7eb\]"],
+html.light-mode [class*="text-\[\#f8fafc\]"],
+html.light-mode [class*="text-\[\#cbd5e1\]"] {
+  color: #1e293b !important;
+}
+
+/* ── Inputs & textareas ── */
+html.light-mode input,
+html.light-mode select,
+html.light-mode textarea {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #1e293b !important;
+}
+html.light-mode input::placeholder,
+html.light-mode textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* ── Buttons ── */
+html.light-mode button:not(.btn-interactive.primary):not([class*="bg-gradient"]) {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #1e293b !important;
+}
+html.light-mode button:not(.btn-interactive.primary):not([class*="bg-gradient"]):hover {
+  background-color: #e2e8f0 !important;
+}
+
+/* Keep the main Compare button as-is (gradient) */
+html.light-mode .btn-interactive.primary {
+  color: #ffffff !important;
+}
+
+/* Tabs */
+html.light-mode [data-tab] {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #475569 !important;
+}
+html.light-mode [data-tab].active,
+html.light-mode [data-tab]:hover {
+  background: #ede9fe !important;
+  border-color: #a78bfa !important;
+  color: #4f46e5 !important;
+}
+
+/* ── Cards (coverage source panels, howto, details) ── */
+html.light-mode .source-panel-card,
+html.light-mode details,
+html.light-mode [class*="rounded-xl"][class*="border"],
+html.light-mode [class*="rounded-2xl"][class*="border"] {
+  background-color: #ffffff !important;
+  border-color: #dde3ec !important;
+}
+
+/* Summaries */
+html.light-mode summary {
+  color: #1e293b !important;
+}
+
+/* Upload drop zones */
+html.light-mode .upload-drop-zone,
+html.light-mode .upload-drop-zone--upload-primary,
+html.light-mode .postman-drop-area {
+  background-color: #f8fafc !important;
+  border-color: rgba(99,102,241,0.30) !important;
+}
+
+/* ── List panel & badges ── */
+html.light-mode .list-panel {
+  background: #f8fafc !important;
+  border-color: #dde3ec !important;
+}
+html.light-mode .list-badge {
+  background: rgba(30,41,59,0.07) !important;
+  border-color: rgba(30,41,59,0.14) !important;
+  color: #1e293b !important;
+}
+html.light-mode .list-badge--green { background: rgba(34,197,94,0.10) !important; border-color: rgba(34,197,94,0.28) !important; color: #166534 !important; }
+html.light-mode .list-badge--red   { background: rgba(239,68,68,0.10) !important; border-color: rgba(239,68,68,0.28) !important; color: #991b1b !important; }
+html.light-mode .list-badge--yellow{ background: rgba(245,158,11,0.10) !important; border-color: rgba(245,158,11,0.28) !important; color: #92400e !important; }
+html.light-mode .list-badge--rich .list-badge__text { color: #1e293b !important; }
+html.light-mode .list-badge__folder { background: rgba(99,102,241,0.10) !important; color: #4f46e5 !important; }
+
+/* ── History runs ── */
+html.light-mode .history-run {
+  background: #f1f5f9 !important;
+  border-color: #dde3ec !important;
+}
+html.light-mode .history-run__date,
+html.light-mode .history-run__detail {
+  color: #64748b !important;
+}
+
+/* ── Run history section ── */
+html.light-mode #run-history-section {
+  background: #f8fafc !important;
+  border-color: #dde3ec !important;
+}
+
+/* ── Drop toast ── */
+html.light-mode .drop-toast {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+/* ── Progress bar track ── */
+html.light-mode .coverage-progress-track {
+  background: #e2e8f0 !important;
+}
+
+/* ── Search input ── */
+html.light-mode .list-search-input {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #1e293b !important;
+}
+
+/* ── Format badges ── */
+html.light-mode .format-badge--indigo { background: rgba(99,102,241,0.10) !important; color: #4f46e5 !important; border-color: rgba(99,102,241,0.25) !important; }
+html.light-mode .format-badge--purple { background: rgba(139,92,246,0.10) !important; color: #7c3aed !important; border-color: rgba(139,92,246,0.25) !important; }
+
+/* ── Theme toggle button in light mode ── */
+html.light-mode .theme-toggle-btn {
+  background: rgba(241,245,249,0.95) !important;
+  border-color: #cbd5e1 !important;
+  color: #475569 !important;
+}
+
+/* ── Theme toggle button ─────────────────────────────────────────────── */
+
+.theme-toggle-btn {
+  position: absolute;
+  transition: all 0.2s ease;
+}
+
+/* ── Sticky results summary header ──────────────────────────────────── */
+
+.results-sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: #111827;
+  border-radius: 1rem;
+  padding: 1rem;
+  margin: -1rem -1rem 0.5rem -1rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+
+html.light-mode .results-sticky-header {
+  background: rgba(255,255,255,0.97) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08) !important;
+}
+
+/* ── Coverage trend indicator ────────────────────────────────────────── */
+
+.trend-up   { color: #4ade80; }
+.trend-down { color: #f87171; }
+.trend-flat { color: #9ca3af; }
+
+/* ── Untested folders ────────────────────────────────────────────────── */
+
+.untested-folder-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  background: rgba(239,68,68,0.12);
+  border: 1px solid rgba(239,68,68,0.3);
+  font-size: 0.75rem;
+  color: #fca5a5;
+}
+
+/* ── Clear button / Keyboard hint ────────────────────────────────────── */
+
+kbd {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  line-height: 1.2;
+}
+
+/* ── Copy summary / Share / JSON export buttons ──────────────────────── */
+
+/* already styled inline via Tailwind */
+
+/* ── Webhook status messages ─────────────────────────────────────────── */
+
+.webhook-success { color: #4ade80; }
+.webhook-error   { color: #f87171; }

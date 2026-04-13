@@ -54,7 +54,7 @@
         },
       };
     </script>
-    <link rel="stylesheet" href="styles.css?v=15" />
+    <link rel="stylesheet" href="styles.css?v=17" />
   </head>
   <body
     class="app-shell min-h-screen font-sans text-[#e5e7eb] antialiased"
@@ -62,6 +62,16 @@
     <main
       class="main-glass relative z-10 mx-auto my-4 max-w-6xl rounded-2xl border border-[#1f2937]/80 bg-[#0f172a]/75 px-4 pb-10 pt-8 shadow-[0_10px_30px_rgba(0,0,0,0.4),0_0_40px_rgba(99,102,241,0.12)] backdrop-blur-xl sm:my-6 sm:px-6 sm:pt-10 lg:px-10"
     >
+      <!-- Dark/Light mode toggle -->
+      <button
+        id="theme-toggle"
+        type="button"
+        aria-label="Toggle light/dark mode"
+        class="theme-toggle-btn absolute right-4 top-4 z-20 flex items-center gap-1.5 rounded-lg border border-[#1f2937] bg-[#111827]/80 px-3 py-1.5 text-xs font-medium text-[#9ca3af] shadow-sm backdrop-blur-sm transition-all hover:border-[#6366f1]/40 hover:text-[#c7d2fe] sm:right-6 sm:top-5"
+      >
+        <span class="theme-toggle-icon">☀️</span>
+        <span class="theme-toggle-label">Light</span>
+      </button>
       <!-- Get started: hero + value + steps -->
       <div
         class="hero-band mb-8 rounded-2xl border border-[#1f2937]/70 bg-[#0f172a]/50 p-5 shadow-inner backdrop-blur-md sm:mb-10 sm:p-7"
@@ -875,6 +885,27 @@
               (leave off for private specs — use file upload instead)
             </span>
           </label>
+          <!-- Webhook settings (collapsed) -->
+          <details id="webhook-settings" class="mb-4 rounded-lg border border-[#1f2937] bg-[#0b0f1a]/60">
+            <summary class="cursor-pointer list-none px-3 py-2 text-xs font-semibold text-[#9ca3af] hover:text-[#e5e7eb] marker:hidden [&::-webkit-details-marker]:hidden">
+              <span class="mr-1 text-[#6b7280]">▸</span>
+              Notify on completion
+              <span class="ml-2 font-normal text-[#4b5563]">Slack / Teams webhook (optional)</span>
+            </summary>
+            <div class="border-t border-[#1f2937] px-3 py-3 space-y-2">
+              <label class="block text-xs text-[#9ca3af]">
+                Webhook URL
+                <input
+                  id="webhook-url"
+                  type="url"
+                  placeholder="https://hooks.slack.com/services/… or Teams URL"
+                  autocomplete="off"
+                  class="mt-1 block w-full rounded-lg border border-[#1f2937] bg-[#111827] px-3 py-2 text-xs text-[#e5e7eb] placeholder:text-[#374151] focus:border-[#6366f1]/60 focus:outline-none focus:ring-1 focus:ring-[#6366f1]/25"
+                />
+              </label>
+              <p id="webhook-status" class="min-h-[1rem] text-xs text-[#6b7280]"></p>
+            </div>
+          </details>
           <p
             id="compare-status"
             class="compare-status mb-3 hidden min-h-[1.25rem] text-sm text-[#a5b4fc]"
@@ -920,6 +951,22 @@
               <span>Analyzing coverage…</span>
             </span>
           </button>
+
+          <div class="mt-3 flex items-center justify-between gap-3">
+            <button
+              type="button"
+              id="clear-all-btn"
+              class="btn-interactive flex-1 rounded-xl border border-[#1f2937] bg-[#0f172a] px-4 py-2.5 text-sm font-medium text-[#9ca3af] transition-all hover:border-[#ef4444]/40 hover:text-[#fca5a5]"
+            >
+              Clear all
+            </button>
+            <p class="text-xs text-[#374151]">
+              <kbd class="rounded bg-[#0f172a] border border-[#1f2937] px-1.5 py-0.5 text-[#4b5563] font-mono text-xs">Ctrl</kbd>
+              +
+              <kbd class="rounded bg-[#0f172a] border border-[#1f2937] px-1.5 py-0.5 text-[#4b5563] font-mono text-xs">↵</kbd>
+              to compare
+            </p>
+          </div>
         </div>
       </form>
 
@@ -971,6 +1018,28 @@
               disabled
             >
               Export CSV
+            </button>
+            <button
+              type="button"
+              id="download-json-btn"
+              class="btn-interactive hidden w-full shrink-0 rounded-lg border border-[#38bdf8]/40 bg-[#38bdf8]/10 px-4 py-2.5 text-sm font-semibold text-[#7dd3fc] transition-all duration-200 ease-out hover:border-[#38bdf8]/60 hover:bg-[#38bdf8]/18 disabled:opacity-50 sm:w-auto"
+              disabled
+            >
+              Export JSON
+            </button>
+            <button
+              type="button"
+              id="copy-summary-btn"
+              class="btn-interactive hidden w-full shrink-0 rounded-lg border border-[#f59e0b]/40 bg-[#f59e0b]/10 px-4 py-2.5 text-sm font-semibold text-[#fcd34d] transition-all duration-200 ease-out hover:border-[#f59e0b]/60 hover:bg-[#f59e0b]/18 sm:w-auto"
+            >
+              Copy summary
+            </button>
+            <button
+              type="button"
+              id="share-link-btn"
+              class="btn-interactive hidden w-full shrink-0 rounded-lg border border-[#a78bfa]/40 bg-[#a78bfa]/10 px-4 py-2.5 text-sm font-semibold text-[#c4b5fd] transition-all duration-200 ease-out hover:border-[#a78bfa]/60 hover:bg-[#a78bfa]/18 sm:w-auto"
+            >
+              Share link
             </button>
             <a
               href="coverage-dashboard/index.html"
@@ -1044,6 +1113,7 @@
               <div class="mt-1 text-sm font-medium text-[#9ca3af]">
                 Coverage %
               </div>
+              <div id="coverage-trend" class="mt-1 hidden text-xs font-semibold"></div>
             </div>
           </div>
 
@@ -1070,6 +1140,21 @@
             </div>
           </div>
         </section>
+
+        <!-- Shareable link banner (shown when page loaded with a hash) -->
+        <div id="shared-result-banner" class="hidden mb-4 rounded-xl border border-[#a78bfa]/30 bg-[#a78bfa]/8 px-4 py-3 text-sm text-[#c4b5fd]">
+          <strong class="text-[#e5e7eb]">Shared result loaded.</strong>
+          These metrics were shared via link — upload your own files and click Compare to re-run.
+          <button type="button" id="dismiss-shared-banner" class="ml-2 text-[#6b7280] hover:text-[#e5e7eb]">&times;</button>
+        </div>
+
+        <!-- Untested folders summary -->
+        <div id="untested-folders-section" class="hidden mb-5 rounded-xl border border-[#ef4444]/25 bg-[#ef4444]/5 px-4 py-3">
+          <p class="mb-2 text-sm font-semibold text-[#fca5a5]">
+            Folders with no covered APIs
+          </p>
+          <div id="untested-folders-list" class="flex flex-wrap gap-2 text-xs text-[#f87171]"></div>
+        </div>
 
         <!-- Hidden from layout but updated by app.js (required IDs) -->
         <div
@@ -1234,7 +1319,7 @@
       </footer>
     </main>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="app.js?v=27"></script>
-    <script src="ui.js?v=9"></script>
+    <script src="app.js?v=28"></script>
+    <script src="ui.js?v=10"></script>
   </body>
 </html>
