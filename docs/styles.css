@@ -409,6 +409,101 @@ details.advanced-details[open] > summary .advanced-chevron {
 }
 
 /* Spec + collection both satisfied (UI hint only) */
+/* Run analysis: balanced two-column source panels */
+.coverage-sources-grid {
+  display: grid;
+  gap: 1.5rem;
+  align-items: stretch;
+}
+
+@media (min-width: 1024px) {
+  .coverage-sources-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2rem;
+  }
+}
+
+.source-panel-card__helper {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.75rem;
+  line-height: 1.55;
+}
+
+.source-panel-divider-or {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0.25rem 0;
+  flex-shrink: 0;
+}
+
+.source-panel-divider-or::before,
+.source-panel-divider-or::after {
+  content: "";
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 1px;
+  background: var(--border);
+}
+
+.source-panel-divider-or span {
+  flex-shrink: 0;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  border: 1px solid rgba(55, 65, 81, 0.95);
+  background: rgba(15, 23, 42, 0.95);
+  border-radius: 9999px;
+  padding: 0.35rem 0.85rem;
+  line-height: 1;
+}
+
+.upload-drop-zone.upload-drop-zone--upload-primary {
+  min-height: 10.5rem;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgba(99, 102, 241, 0.06);
+}
+
+#collection-drop-zone.upload-drop-zone--upload-primary {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgba(139, 92, 246, 0.08);
+}
+
+@media (min-width: 640px) {
+  .upload-drop-zone.upload-drop-zone--upload-primary {
+    min-height: 11.75rem;
+  }
+}
+
+.postman-drop-area {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+@media (min-width: 1024px) {
+  .postman-drop-area {
+    min-height: 11rem;
+  }
+}
+
+.postman-drop-area .upload-drop-zone--upload-primary {
+  flex: 1 1 auto;
+  min-height: 10.5rem;
+}
+
+@media (min-width: 640px) {
+  .postman-drop-area .upload-drop-zone--upload-primary {
+    min-height: 11.75rem;
+  }
+}
+
 .swagger-source-shell.panel-input-ready,
 .postman-source-shell.panel-input-ready {
   border-color: rgba(34, 197, 94, 0.5);

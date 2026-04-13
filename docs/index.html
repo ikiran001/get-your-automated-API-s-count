@@ -54,7 +54,7 @@
         },
       };
     </script>
-    <link rel="stylesheet" href="styles.css?v=12" />
+    <link rel="stylesheet" href="styles.css?v=13" />
   </head>
   <body
     class="app-shell min-h-screen font-sans text-[#e5e7eb] antialiased"
@@ -292,8 +292,12 @@
           <p class="mt-2 border-t border-[#1f2937] pt-2 text-xs leading-relaxed">
             Many APIs block direct
             <code class="rounded bg-[#0f172a] px-1 text-[#c7d2fe]">fetch</code>
-            from GitHub Pages. This app retries via public relays; if that
-            fails, save the OpenAPI JSON and upload it. The durable fix is
+            from GitHub Pages. This app can use your own CORS proxy (<code
+              class="rounded bg-[#0f172a] px-1 text-[#c7d2fe]"
+              >npm run openapi-proxy</code
+            >) or public relays. Relays often reject internal or beta URLs. If
+            loading fails, set the optional proxy under the spec URL, save the
+            OpenAPI JSON and upload it, or add
             <code class="rounded bg-[#0f172a] px-1 text-[#c7d2fe]"
               >Access-Control-Allow-Origin</code
             >
@@ -312,8 +316,8 @@
             Run analysis
           </h2>
           <p class="mt-1 text-xs text-[#9ca3af] sm:text-sm">
-            Add your OpenAPI spec (URL or file) and Postman collection, then
-            compare.
+            Upload OpenAPI JSON (recommended) or paste a URL; add your Postman
+            collection, then compare.
           </p>
         </div>
 
@@ -336,13 +340,11 @@
               <strong class="font-medium text-[#e5e7eb]"
                 >Prepare your OpenAPI / Swagger JSON.</strong
               >
-              Use a public spec URL that points at JSON (often
+              Prefer <strong class="text-[#a5b4fc]">uploading the file</strong>
+              (most reliable). You can paste a
               <code class="rounded bg-[#0f172a] px-1 text-[#c7d2fe]">.json</code>
-              or
-              <code class="rounded bg-[#0f172a] px-1 text-[#c7d2fe]"
-                >?format=json</code
-              >). If the link cannot load in the browser, download the file and
-              upload it in TestLens instead.
+              URL only if the browser can load it. If paste fails, open the URL in
+              a new tab, save the JSON (Save As), and upload it.
             </li>
             <li class="text-[#cbd5e1]">
               <strong class="font-medium text-[#e5e7eb]"
@@ -356,11 +358,11 @@
             </li>
             <li class="text-[#cbd5e1]">
               <strong class="font-medium text-[#e5e7eb]"
-                >Paste the spec URL</strong
+                >Add your OpenAPI</strong
               >
-              (or upload the OpenAPI JSON) in the
-              <span class="text-[#a5b4fc]">OpenAPI / Swagger</span> panel on the
-              left.
+              in the
+              <span class="text-[#a5b4fc]">OpenAPI / Swagger</span> panel:
+              upload the JSON first if you can, or paste the spec URL (optional).
             </li>
             <li class="text-[#cbd5e1]">
               <strong class="font-medium text-[#e5e7eb]"
@@ -509,73 +511,47 @@
           </div>
         </details>
 
-        <div
-          class="mb-4 grid gap-4 lg:grid-cols-2 lg:gap-6 lg:items-start"
-        >
-        <!-- OpenAPI / Swagger: URL (primary) OR file -->
+        <div class="coverage-sources-grid mb-6">
+        <!-- OpenAPI / Swagger: file first (priority), then optional URL -->
         <div
           id="swagger-source-panel"
-          class="swagger-source-shell min-w-0 space-y-3 rounded-xl border-2 border-transparent p-2 transition-[border-color,box-shadow,background-color] duration-200 sm:p-3"
+          class="swagger-source-shell source-panel-card flex h-full min-h-0 min-w-0 flex-col gap-5 rounded-xl border-2 border-transparent bg-[#0f172a]/40 p-4 transition-[border-color,box-shadow,background-color] duration-200 sm:p-5"
         >
-          <p
-            class="text-xs font-semibold uppercase tracking-wide text-[#9ca3af]"
-          >
-            OpenAPI / Swagger
-          </p>
-          <div id="swagger-url-field-wrap" class="rounded-xl">
-            <label
-              for="swagger-url"
-              class="mb-1.5 block text-sm font-medium text-[#e5e7eb]"
-            >
-              Paste spec URL
-              <span class="font-normal text-[#6366f1]">· recommended</span>
-            </label>
-            <input
-              id="swagger-url"
-              type="url"
-              placeholder="https://api.example.com/openapi.json"
-              autocomplete="off"
-              class="swagger-url-input w-full rounded-xl border border-[#6366f1]/35 bg-[#0f172a] px-3 py-2.5 text-sm text-[#e5e7eb] shadow-inner ring-1 ring-[#6366f1]/20 placeholder:text-[#6b7280] focus:border-[#6366f1] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/35"
-            />
+          <header class="source-panel-card__head border-b border-[#1f2937] pb-3">
             <p
-              id="swagger-url-error"
-              class="mt-1.5 hidden text-xs font-medium leading-relaxed text-red-300"
-              role="alert"
-            ></p>
-            <p class="mt-1.5 text-xs leading-relaxed text-[#6b7280]">
-              Must end with
-              <code class="text-[#9ca3af]">.json</code>
-              or use
-              <code class="text-[#9ca3af]">?format=json</code>. If CORS blocks
-              the request, upload the file below.
+              class="text-xs font-semibold uppercase tracking-[0.12em] text-[#9ca3af]"
+            >
+              OpenAPI / Swagger
             </p>
-          </div>
+          </header>
 
-          <div
-            class="flex items-center gap-3 py-0.5"
-            role="separator"
-            aria-label="Or use file upload"
-          >
-            <span class="h-px flex-1 bg-[#1f2937]"></span>
-            <span
-              class="shrink-0 rounded-full border border-[#374151] bg-[#0f172a] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#9ca3af]"
-              >or</span
+          <section class="flex flex-col gap-3">
+            <label class="block text-sm font-medium text-[#e5e7eb]"
+              >Upload OpenAPI JSON
+              <span class="font-normal text-[#34d399]">· recommended</span></label
             >
-            <span class="h-px flex-1 bg-[#1f2937]"></span>
-          </div>
-
-          <div>
-            <label class="mb-1.5 block text-sm font-medium text-[#9ca3af]"
-              >Upload JSON file instead</label
-            >
-            <p class="mb-2 text-xs text-[#6b7280]">
-              Skip the URL if you already have
+            <p class="source-panel-card__helper text-xs leading-relaxed">
+              <strong class="text-[#9ca3af]">First choice:</strong> if you have
               <code class="rounded bg-[#0f172a] px-1 text-[#9ca3af]">openapi.json</code>
-              on disk.
+              on disk, use this. If
+              <strong class="text-[#9ca3af]">pasting the URL fails</strong> (CORS
+              or errors), open the same link in a
+              <strong class="text-[#9ca3af]">new browser tab</strong>, wait until
+              you see the JSON, then
+              <strong class="text-[#9ca3af]">Save As</strong> (or
+              <kbd class="rounded bg-[#0f172a] px-1 font-mono text-[#9ca3af]"
+                >Cmd+S</kbd
+              >
+              /
+              <kbd class="rounded bg-[#0f172a] px-1 font-mono text-[#9ca3af]"
+                >Ctrl+S</kbd
+              >) and upload the file here. A selected file
+              <strong class="text-[#9ca3af]">always wins</strong> over a pasted
+              URL.
             </p>
             <div
               id="swagger-drop-zone"
-              class="upload-drop-zone upload-drop-zone--large group relative flex min-h-[132px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#334155] bg-gradient-to-b from-[#0f172a] to-[#111827] px-5 py-8 hover:border-[#6366f1]/90 sm:min-h-[148px] sm:px-6 sm:py-9"
+              class="upload-drop-zone upload-drop-zone--large upload-drop-zone--upload-primary group relative flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#334155] bg-gradient-to-b from-[#0f172a] to-[#111827] px-5 py-8 hover:border-[#6366f1]/90 sm:px-6 sm:py-9"
             >
               <input
                 id="swagger-file"
@@ -605,58 +581,175 @@
                 class="mt-1 max-w-full truncate text-xs text-[#818cf8]"
               ></span>
             </div>
+          </section>
+
+          <div
+            class="source-panel-divider-or"
+            role="separator"
+            aria-label="Or paste URL"
+          >
+            <span>or</span>
           </div>
+
+          <section
+            id="swagger-url-field-wrap"
+            class="source-panel-card__section flex flex-col gap-3 rounded-xl"
+          >
+            <label
+              for="swagger-url"
+              class="block text-sm font-medium text-[#e5e7eb]"
+            >
+              Paste spec URL
+              <span class="font-normal text-[#6b7280]">· optional</span>
+            </label>
+            <input
+              id="swagger-url"
+              type="url"
+              placeholder="https://api.example.com/openapi.json"
+              autocomplete="off"
+              class="swagger-url-input w-full rounded-xl border border-[#6366f1]/35 bg-[#0f172a] px-3 py-2.5 text-sm text-[#e5e7eb] shadow-inner ring-1 ring-[#6366f1]/20 placeholder:text-[#6b7280] focus:border-[#6366f1] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/35"
+            />
+            <p
+              id="swagger-url-error"
+              class="hidden text-xs font-medium leading-relaxed text-red-300"
+              role="alert"
+            ></p>
+            <p class="source-panel-card__helper text-xs leading-relaxed">
+              Only used when <strong class="text-[#9ca3af]">no file</strong> is
+              selected. URL must end with
+              <code class="text-[#9ca3af]">.json</code> or use
+              <code class="text-[#9ca3af]">?format=json</code>. If loading fails,
+              download the JSON from the URL (new tab → Save As) and upload
+              above.
+            </p>
+          </section>
+
+          <details
+            class="rounded-xl border border-[#1f2937] bg-[#111827]/80 px-3 py-2 text-xs text-[#9ca3af]"
+          >
+            <summary
+              class="cursor-pointer list-none font-medium text-[#e5e7eb] marker:hidden [&::-webkit-details-marker]:hidden"
+            >
+              <span
+                class="layout-tip-chevron inline-block text-[#a5b4fc] transition-transform duration-200"
+                >▸</span
+              >
+              CORS proxy (optional — works for any public JSON URL)
+            </summary>
+            <div class="mt-2 space-y-2 border-t border-[#1f2937] pt-3">
+              <p class="leading-relaxed">
+                <strong class="text-[#e5e7eb]">Easiest on localhost:</strong> from
+                the repo root run
+                <code class="font-mono text-[#c7d2fe]">npm run dev</code> and open
+                <code class="font-mono text-[#c7d2fe]">http://localhost:8080</code>
+                — the dev server includes a
+                <strong class="text-[#e5e7eb]">same-origin</strong> OpenAPI proxy
+                (no CORS, no extra port). Do not use
+                <code class="font-mono text-[#9ca3af]">python -m http.server</code>
+                if you need URL paste for locked-down APIs.
+              </p>
+              <p class="leading-relaxed">
+                Alternative: run
+                <code class="font-mono text-[#c7d2fe]">npm run openapi-proxy</code>
+                (port 8787). On localhost this page also tries
+                <code class="text-[#c7d2fe]">localhost:8787</code> and
+                <code class="text-[#c7d2fe]">127.0.0.1:8787</code> automatically.
+                You can set a custom proxy base below (saved in this browser).
+              </p>
+              <p class="leading-relaxed text-[#6b7280]">
+                Use the <strong class="text-[#9ca3af]">same host name</strong> as
+                this page (e.g. if the app is
+                <code class="text-[#9ca3af]">http://localhost:8080</code>, set
+                <code class="text-[#9ca3af]">http://localhost:8787</code> — not
+                <code class="text-[#9ca3af]">127.0.0.1</code> unless the app uses
+                that too).
+              </p>
+              <label
+                for="openapi-cors-proxy-base"
+                class="mb-1 block text-sm font-medium text-[#e5e7eb]"
+                >Proxy base URL</label
+              >
+              <input
+                id="openapi-cors-proxy-base"
+                type="url"
+                inputmode="url"
+                placeholder="http://localhost:8787"
+                autocomplete="off"
+                class="w-full rounded-lg border border-[#374151] bg-[#0f172a] px-3 py-2 font-mono text-sm text-[#e5e7eb] placeholder:text-[#6b7280] focus:border-[#6366f1] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/30"
+              />
+              <p class="text-[11px] leading-relaxed text-[#6b7280]">
+                The proxy must accept
+                <code class="text-[#9ca3af]">GET ?url=</code> with your OpenAPI
+                URL encoded. See
+                <code class="text-[#9ca3af]">tools/openapi-cors-proxy.mjs</code>
+                or
+                <code class="text-[#9ca3af]">workers/openapi-proxy-cloudflare.js</code>
+                in the repo.
+              </p>
+            </div>
+          </details>
         </div>
 
         <!-- Upload Postman -->
         <div
           id="postman-source-panel"
-          class="postman-source-shell min-w-0 rounded-xl border-2 border-transparent p-2 transition-[border-color,box-shadow,background-color] duration-200 sm:p-3"
+          class="postman-source-shell source-panel-card flex h-full min-h-0 min-w-0 flex-col gap-5 rounded-xl border-2 border-transparent bg-[#0f172a]/40 p-4 transition-[border-color,box-shadow,background-color] duration-200 sm:p-5"
         >
-          <label class="mb-1.5 block text-sm font-medium text-[#9ca3af]"
-            >Upload Postman Collection</label
-          >
-          <p class="mb-2 text-xs text-[#6b7280]">
-            Required. Export your collection as JSON from Postman.
+          <header class="source-panel-card__head border-b border-[#1f2937] pb-3">
+            <p
+              class="text-xs font-semibold uppercase tracking-[0.12em] text-[#9ca3af]"
+            >
+              Postman
+            </p>
+            <p class="mt-2 text-sm font-medium text-[#e5e7eb]">
+              Collection JSON
+              <span class="font-normal text-red-400/90">· required</span>
+            </p>
+          </header>
+          <p class="source-panel-card__helper text-xs leading-relaxed">
+            Export your collection as JSON from Postman (collection menu →
+            Export → v2.1). This upload is required to run the comparison.
           </p>
-          <div
-            id="collection-drop-zone"
-            class="upload-drop-zone upload-drop-zone--large group relative flex min-h-[132px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#334155] bg-gradient-to-b from-[#0f172a] to-[#111827] px-5 py-8 hover:border-[#8b5cf6]/90 sm:min-h-[148px] sm:px-6 sm:py-9"
-          >
-            <input
-              id="collection-file"
-              type="file"
-              accept=".json,application/json"
-              required
-              class="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
-            />
-            <svg
-              class="mb-1.5 h-8 w-8 text-[#9ca3af] transition-colors group-hover:text-[#8b5cf6]"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
+          <div class="postman-drop-area flex min-h-0 flex-1 flex-col">
+            <div
+              id="collection-drop-zone"
+              class="upload-drop-zone upload-drop-zone--large upload-drop-zone--upload-primary group relative flex min-h-0 flex-1 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#334155] bg-gradient-to-b from-[#0f172a] to-[#111827] px-5 py-8 hover:border-[#8b5cf6]/90 sm:px-6 sm:py-9"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="1.5"
-                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+              <input
+                id="collection-file"
+                type="file"
+                accept=".json,application/json"
+                required
+                class="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
               />
-            </svg>
-            <span class="text-center text-xs font-medium text-[#9ca3af] sm:text-sm"
-              >Drag &amp; drop or click — collection JSON (required)</span
-            >
-            <span
-              id="collection-file-name"
-              class="mt-1.5 max-w-full truncate text-xs text-[#a78bfa]"
-            ></span>
+              <svg
+                class="mb-1.5 h-8 w-8 text-[#9ca3af] transition-colors group-hover:text-[#8b5cf6]"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.5"
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                />
+              </svg>
+              <span class="text-center text-xs font-medium text-[#9ca3af] sm:text-sm"
+                >Drag &amp; drop or click — collection JSON (required)</span
+              >
+              <span
+                id="collection-file-name"
+                class="mt-1.5 max-w-full truncate text-xs text-[#a78bfa]"
+              ></span>
+            </div>
           </div>
         </div>
         </div>
 
         <div
-          class="compare-cta mt-6 rounded-xl border border-[#1f2937] bg-[#0f172a] p-4 sm:p-5"
+          class="compare-cta mt-8 rounded-xl border border-[#1f2937] bg-[#0f172a] p-4 sm:p-5"
         >
           <label
             class="mb-3 flex cursor-pointer items-center gap-2 text-sm text-[#9ca3af]"
@@ -992,7 +1085,7 @@
         Built for QA &amp; developers
       </footer>
     </main>
-    <script src="app.js?v=20"></script>
+    <script src="app.js?v=25"></script>
     <script src="ui.js?v=7"></script>
   </body>
 </html>
