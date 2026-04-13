@@ -30,13 +30,13 @@ function normalizePath(path) {
   return p;
 }
 
-/** True if URL looks like a JSON OpenAPI endpoint (path ends with .json or ?format=json). */
+/** True if URL looks like a JSON/YAML OpenAPI endpoint. */
 function openApiUrlLooksLikeJson(urlTrim) {
   if (!urlTrim) return false;
   try {
     const u = new URL(urlTrim);
     const path = u.pathname.toLowerCase();
-    if (path.endsWith(".json")) return true;
+    if (path.endsWith(".json") || path.endsWith(".yaml") || path.endsWith(".yml")) return true;
     const fmt = u.searchParams.get("format");
     if (fmt && String(fmt).toLowerCase() === "json") return true;
     return false;
@@ -120,25 +120,228 @@ function extractPostmanRequests(collection, host, halHost) {
   return { endpoints, totalRequests };
 }
 
-function readJsonFile(file) {
+/* ── Postman v1 ────────────────────────────────────────────────────────── */
+
+function extractPostmanV1Requests(collection) {
+  const endpoints = [];
+  let totalRequests = 0;
+
+  // Build request-id → folder name map
+  const folderMap = {};
+  if (Array.isArray(collection.folders)) {
+    for (const folder of collection.folders) {
+      const fname = folder.name || "";
+      if (Array.isArray(folder.order)) {
+        for (const rid of folder.order) folderMap[rid] = fname;
+      }
+    }
+  }
+
+  const requests = Array.isArray(collection.requests) ? collection.requests : [];
+  for (const req of requests) {
+    totalRequests++;
+    const method = (req.method || "").toUpperCase();
+    const rawUrl = (req.url || "").replace(/\{\{[^}]+\}\}/g, "placeholder");
+    try {
+      const u = new URL(rawUrl);
+      const path = normalizePath(u.pathname);
+      if (method && path && HTTP_METHODS.has(method)) {
+        endpoints.push([method, path, folderMap[req.id] || ""]);
+      }
+    } catch { /* skip invalid URLs */ }
+  }
+  return { endpoints, totalRequests };
+}
+
+/* ── Insomnia v4 ───────────────────────────────────────────────────────── */
+
+function extractInsomniaRequests(parsed) {
+  const endpoints = [];
+  let totalRequests = 0;
+  const resources = parsed.resources || [];
+
+  // Build folder-id → name map
+  const folderNames = {};
+  for (const r of resources) {
+    if (r._type === "request_group") folderNames[r._id] = r.name || "";
+  }
+
+  for (const r of resources) {
+    if (r._type !== "request") continue;
+    totalRequests++;
+    const method = (r.method || "").toUpperCase();
+    // Replace leading {{var}} (base URL template) with a real scheme+host so
+    // the URL parses correctly; replace remaining {{...}} with "placeholder".
+    const rawUrl = (r.url || "")
+      .replace(/^\{\{[^}]+\}\}/, "https://testlens.invalid")
+      .replace(/\{\{[^}]+\}\}/g, "placeholder");
+    try {
+      const u = new URL(rawUrl);
+      const path = normalizePath(u.pathname);
+      if (method && path && HTTP_METHODS.has(method)) {
+        endpoints.push([method, path, folderNames[r.parentId] || ""]);
+      }
+    } catch { /* skip unparseable URLs */ }
+  }
+  return { endpoints, totalRequests };
+}
+
+/* ── Bruno (JSON export) ───────────────────────────────────────────────── */
+
+function extractBrunoRequests(parsed) {
+  const endpoints = [];
+  let totalRequests = 0;
+
+  function walkItems(items, folderPath) {
+    if (!Array.isArray(items)) return;
+    for (const item of items) {
+      if (item.type === "http" || item.type === "graphql") {
+        totalRequests++;
+        const req = item.request || {};
+        const method = (req.method || "").toUpperCase();
+        const rawUrl = (req.url || "").replace(/\{\{[^}]+\}\}/g, "placeholder");
+        try {
+          const u = new URL(rawUrl);
+          const path = normalizePath(u.pathname);
+          if (method && path && HTTP_METHODS.has(method)) {
+            endpoints.push([method, path, folderPath || ""]);
+          }
+        } catch { /* skip */ }
+      }
+      if (item.type === "folder" && Array.isArray(item.items)) {
+        const childFolder = folderPath
+          ? folderPath + " › " + (item.name || "")
+          : (item.name || "");
+        walkItems(item.items, childFolder);
+      }
+    }
+  }
+
+  walkItems(parsed.items, "");
+  return { endpoints, totalRequests };
+}
+
+/* ── HAR (HTTP Archive) ────────────────────────────────────────────────── */
+
+function extractHARRequests(parsed) {
+  const endpoints = [];
+  let totalRequests = 0;
+  const entries = (parsed.log && parsed.log.entries) || [];
+
+  for (const entry of entries) {
+    const req = entry.request;
+    if (!req) continue;
+    totalRequests++;
+    const method = (req.method || "").toUpperCase();
+    if (!HTTP_METHODS.has(method)) continue;
+    try {
+      const u = new URL(req.url || "");
+      const path = normalizePath(u.pathname);
+      if (path) endpoints.push([method, path, ""]);
+    } catch { /* skip */ }
+  }
+  return { endpoints, totalRequests };
+}
+
+/**
+ * Auto-detect collection format and extract [method, path, folder] triples.
+ * Supports Postman v1 / v2 / v2.1, Insomnia v4, Bruno JSON, HAR.
+ */
+function detectAndExtractRequests(collection, host, halHost) {
+  if (!collection || typeof collection !== "object") {
+    throw new Error("Collection is empty or not a valid JSON object.");
+  }
+
+  // Postman v2 / v2.1  — has info.schema + item array
+  if (collection.info && Array.isArray(collection.item)) {
+    return extractPostmanRequests(collection, host, halHost);
+  }
+
+  // Postman v1 — flat requests array, no info.schema
+  if (Array.isArray(collection.requests) && !collection.info) {
+    return extractPostmanV1Requests(collection);
+  }
+
+  // Insomnia v4 — _type: "export" + resources array
+  if (collection._type === "export" && Array.isArray(collection.resources)) {
+    return extractInsomniaRequests(collection);
+  }
+
+  // Bruno JSON export — version field + items array with type:"http"/"folder"
+  if (
+    collection.version &&
+    Array.isArray(collection.items) &&
+    collection.items.some((i) => i.type === "http" || i.type === "folder" || i.type === "graphql")
+  ) {
+    return extractBrunoRequests(collection);
+  }
+
+  // HAR — log.entries
+  if (collection.log && Array.isArray(collection.log.entries)) {
+    return extractHARRequests(collection);
+  }
+
+  throw new Error(
+    "Could not detect the collection format. " +
+    "Supported: Postman v1, v2, v2.1 · Insomnia v4 (JSON export) · Bruno (JSON export) · HAR (.har). " +
+    "Make sure you exported a collection — not an environment, globals, or partial file."
+  );
+}
+
+function readFileAsText(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        resolve(JSON.parse(reader.result));
-      } catch (e) {
-        reject(new Error(
-          `"${file.name}" is not valid JSON. ` +
-          "Make sure you exported the file correctly and didn't save it as a different format. " +
-          "In Postman: Collection menu → Export → Collection v2.1 (JSON)."
-        ));
-      }
-    };
+    reader.onload = () => resolve(reader.result);
     reader.onerror = () => reject(new Error(
-      `Could not read "${file.name}". The file may be empty, locked, or an unsupported format.`
+      `Could not read "${file.name}". The file may be empty or locked.`
     ));
     reader.readAsText(file, "UTF-8");
   });
+}
+
+/**
+ * Read an OpenAPI spec file — JSON or YAML.
+ * Requires js-yaml on window for .yaml/.yml files.
+ */
+async function readSpecFile(file) {
+  const text = await readFileAsText(file);
+  const name = (file.name || "").toLowerCase();
+  if (name.endsWith(".yaml") || name.endsWith(".yml")) {
+    if (!window.jsyaml) {
+      throw new Error(
+        "YAML parser (js-yaml) is not loaded. Please hard-refresh the page (Ctrl+Shift+R / Cmd+Shift+R) and try again."
+      );
+    }
+    try {
+      return window.jsyaml.load(text);
+    } catch (e) {
+      throw new Error(`YAML parse error in "${file.name}": ${e.message || e}`);
+    }
+  }
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    throw new Error(
+      `"${file.name}" is not valid JSON. ` +
+      "Make sure you exported the OpenAPI spec correctly (JSON or YAML format)."
+    );
+  }
+}
+
+/**
+ * Read a collection file — all supported formats are JSON (Postman, Insomnia, Bruno, HAR).
+ */
+async function readCollectionFile(file) {
+  const text = await readFileAsText(file);
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    throw new Error(
+      `"${file.name}" is not valid JSON. ` +
+      "Supported formats: Postman v1/v2/v2.1, Insomnia v4 (JSON export), Bruno (JSON export), or HAR (.har). " +
+      "Make sure you exported correctly."
+    );
+  }
 }
 
 function isBrowserCorsOrNetworkError(err) {
@@ -555,7 +758,7 @@ function runAnalysis(openapi, collection, options) {
 
   const swaggerEndpoints = extractSwaggerPaths(openapi, excludeDeprecated);
   const prefixes = getServerPathPrefixes(openapi);
-  const { endpoints: postmanEndpoints, totalRequests } = extractPostmanRequests(
+  const { endpoints: postmanEndpoints, totalRequests } = detectAndExtractRequests(
     collection,
     host,
     halHost
@@ -861,7 +1064,9 @@ els.form.addEventListener("submit", async (e) => {
 
   const collFiles = els.collectionFile.files;
   if (!collFiles || !collFiles.length) {
-    showError("Please choose your Postman collection JSON file.");
+    showError(
+      "Please upload a collection file — Postman v1/v2/v2.1, Insomnia v4, Bruno (JSON), or HAR."
+    );
     return;
   }
 
@@ -869,12 +1074,12 @@ els.form.addEventListener("submit", async (e) => {
   const urlTrim = els.swaggerUrl.value.trim();
   if (!swaggerF || !swaggerF.length) {
     if (!urlTrim) {
-      showError("Provide an OpenAPI JSON file or a spec URL.");
+      showError("Provide an OpenAPI / Swagger spec file (JSON or YAML) or paste a spec URL.");
       return;
     }
     if (!openApiUrlLooksLikeJson(urlTrim)) {
       showError(
-        "OpenAPI URL must end with .json (e.g. .../openapi.json) or use ?format=json. Or upload a spec file."
+        "OpenAPI URL must end with .json, .yaml, or .yml (e.g. .../openapi.json) or use ?format=json. Or upload a spec file."
       );
       return;
     }
@@ -885,15 +1090,23 @@ els.form.addEventListener("submit", async (e) => {
   els.runBtn.disabled = true;
   setCompareButtonLoading(true);
   try {
-    setCompareStatus("Reading your Postman file…");
-    const collection = await readJsonFile(collFiles[0]);
+    setCompareStatus("Reading your collection file…");
+    const collection = await readCollectionFile(collFiles[0]);
     // Detect if an OpenAPI spec was mistakenly uploaded as the collection
-    if (collection && typeof collection === "object" &&
-        (typeof collection.openapi === "string" || typeof collection.swagger === "string" ||
-         (collection.paths && typeof collection.paths === "object" && !collection.item))) {
+    if (
+      collection &&
+      typeof collection === "object" &&
+      (typeof collection.openapi === "string" ||
+        typeof collection.swagger === "string" ||
+        (collection.paths &&
+          typeof collection.paths === "object" &&
+          !collection.item &&
+          !collection.requests &&
+          !collection.resources))
+    ) {
       showError(
-        "The file in the Postman slot looks like an OpenAPI spec, not a collection. " +
-        "Please upload your Postman collection JSON in the right panel, " +
+        "The file in the collection slot looks like an OpenAPI spec, not a collection. " +
+        "Please upload your Postman / Insomnia / Bruno / HAR collection in the right panel, " +
         "and your OpenAPI / Swagger spec in the left panel."
       );
       return;
@@ -906,9 +1119,9 @@ els.form.addEventListener("submit", async (e) => {
           "Reading uploaded OpenAPI file (pasted URL ignored when a file is selected)…"
         );
       } else {
-        setCompareStatus("Reading your OpenAPI file…");
+        setCompareStatus("Reading your OpenAPI spec file…");
       }
-      openapi = await readJsonFile(swaggerF[0]);
+      openapi = await readSpecFile(swaggerF[0]);
     } else {
       setCompareStatus("Loading OpenAPI from the URL…");
       let viaProxy = false;

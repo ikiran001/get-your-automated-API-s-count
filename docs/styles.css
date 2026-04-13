@@ -409,6 +409,31 @@ details.advanced-details[open] > summary .advanced-chevron {
 }
 
 /* Spec + collection both satisfied (UI hint only) */
+/* ── Format badges (shown in panel headers) ───────────────────────────── */
+
+.format-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 0.18rem 0.55rem;
+  border-radius: 4px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.format-badge--indigo {
+  background: rgba(99, 102, 241, 0.14);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.25);
+}
+
+.format-badge--purple {
+  background: rgba(139, 92, 246, 0.13);
+  color: #c4b5fd;
+  border: 1px solid rgba(139, 92, 246, 0.24);
+}
+
 /* Run analysis: balanced two-column source panels */
 .coverage-sources-grid {
   display: grid;

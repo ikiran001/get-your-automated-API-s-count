@@ -325,7 +325,7 @@
     try {
       var u = new URL(urlTrim);
       var path = u.pathname.toLowerCase();
-      if (path.endsWith(".json")) return true;
+      if (path.endsWith(".json") || path.endsWith(".yaml") || path.endsWith(".yml")) return true;
       var fmt = u.searchParams.get("format");
       if (fmt && String(fmt).toLowerCase() === "json") return true;
       return false;
@@ -355,7 +355,7 @@
       wrap.classList.add("swagger-url-invalid");
       urlEl.setAttribute("aria-invalid", "true");
       errEl.textContent =
-        "URL must end with .json (e.g. …/openapi.json) or use ?format=json — or clear the field and upload a file.";
+        "URL must end with .json, .yaml, or .yml — or use ?format=json — or clear the field and upload a file.";
       errEl.classList.remove("hidden");
     } else {
       wrap.classList.remove("swagger-url-invalid");
@@ -644,8 +644,21 @@
   function detectAndAssignFile(file) {
     var reader = new FileReader();
     reader.onload = function () {
+      var text = reader.result;
       var parsed;
-      try { parsed = JSON.parse(reader.result); } catch (e) {
+      // YAML files aren't JSON — detect by extension and treat as OpenAPI
+      var fname = (file.name || "").toLowerCase();
+      if (fname.endsWith(".yaml") || fname.endsWith(".yml")) {
+        showDropToast("✓ YAML OpenAPI spec detected — assigned to the left panel");
+        var input = document.getElementById("swagger-file");
+        if (input) {
+          try { var ndt = new DataTransfer(); ndt.items.add(file); input.files = ndt.files; input.dispatchEvent(new Event("change", { bubbles: true })); } catch (e) {}
+          setFileNameLabel("swagger-file", "swagger-file-name");
+          syncCoverageInputPanels();
+        }
+        return;
+      }
+      try { parsed = JSON.parse(text); } catch (e) {
         showDropToast("⚠ That file doesn't look like valid JSON.");
         return;
       }
@@ -654,16 +667,29 @@
         typeof parsed.openapi === "string" ||
         typeof parsed.swagger === "string"
       );
-      var isPostman = !!(parsed.info && parsed.item && Array.isArray(parsed.item));
+      var isCollection = !!(
+        (parsed.info && parsed.item && Array.isArray(parsed.item)) ||  // Postman v2
+        (Array.isArray(parsed.requests) && !parsed.info) ||            // Postman v1
+        (parsed._type === "export" && Array.isArray(parsed.resources)) || // Insomnia
+        (parsed.version && Array.isArray(parsed.items)) ||             // Bruno
+        (parsed.log && Array.isArray(parsed.log.entries))              // HAR
+      );
+      var formatLabel = "Collection";
+      if (parsed._type === "export") formatLabel = "Insomnia collection";
+      else if (parsed.log && parsed.log.entries) formatLabel = "HAR capture";
+      else if (parsed.version && parsed.items) formatLabel = "Bruno collection";
+      else if (Array.isArray(parsed.requests) && !parsed.info) formatLabel = "Postman v1 collection";
+      else if (parsed.info && parsed.item) formatLabel = "Postman collection";
+
       var targetId, labelId, msg;
-      if (isOpenApi && !isPostman) {
+      if (isOpenApi && !isCollection) {
         targetId = "swagger-file";
         labelId = "swagger-file-name";
         msg = "✓ OpenAPI spec detected — assigned to the left panel";
-      } else if (isPostman) {
+      } else if (isCollection) {
         targetId = "collection-file";
         labelId = "collection-file-name";
-        msg = "✓ Postman collection detected — assigned to the right panel";
+        msg = "✓ " + formatLabel + " detected — assigned to the right panel";
       } else {
         showDropToast("⚠ Could not detect file type. Drop it on the correct panel manually.");
         return;

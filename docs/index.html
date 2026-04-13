@@ -54,7 +54,7 @@
         },
       };
     </script>
-    <link rel="stylesheet" href="styles.css?v=14" />
+    <link rel="stylesheet" href="styles.css?v=15" />
   </head>
   <body
     class="app-shell min-h-screen font-sans text-[#e5e7eb] antialiased"
@@ -316,8 +316,8 @@
             Run analysis
           </h2>
           <p class="mt-1 text-xs text-[#9ca3af] sm:text-sm">
-            Upload OpenAPI JSON (recommended) or paste a URL; add your Postman
-            collection, then compare.
+            Upload your OpenAPI spec (JSON or YAML) and your collection
+            (Postman · Insomnia · Bruno · HAR), then click Compare.
           </p>
         </div>
 
@@ -334,70 +334,162 @@
             How to get your coverage report (step by step)
           </summary>
           <ol
-            class="mt-3 list-decimal space-y-2.5 border-t border-[#1f2937] pt-3 pl-5 text-xs leading-relaxed sm:text-sm"
+            class="mt-3 list-decimal space-y-3 border-t border-[#1f2937] pt-3 pl-5 text-xs leading-relaxed sm:text-sm"
           >
             <li class="text-[#cbd5e1]">
-              <strong class="font-medium text-[#e5e7eb]"
-                >Prepare your OpenAPI / Swagger JSON.</strong
-              >
-              Prefer <strong class="text-[#a5b4fc]">uploading the file</strong>
-              (most reliable). You can paste a
-              <code class="rounded bg-[#0f172a] px-1 text-[#c7d2fe]">.json</code>
-              URL only if the browser can load it. If paste fails, open the URL in
-              a new tab, save the JSON (Save As), and upload it.
+              <strong class="font-medium text-[#e5e7eb]">Prepare your OpenAPI / Swagger spec.</strong>
+              Supports <code class="rounded bg-[#0f172a] px-1 text-[#c7d2fe]">.json</code>,
+              <code class="rounded bg-[#0f172a] px-1 text-[#c7d2fe]">.yaml</code>, and
+              <code class="rounded bg-[#0f172a] px-1 text-[#c7d2fe]">.yml</code> files.
+              Prefer <strong class="text-[#a5b4fc]">uploading the file</strong> (most reliable).
+              You can also paste a URL — if that fails (CORS block), open the URL in a new tab,
+              <strong class="text-[#9ca3af]">Save As</strong> (Cmd+S / Ctrl+S), and upload the saved file.
             </li>
             <li class="text-[#cbd5e1]">
-              <strong class="font-medium text-[#e5e7eb]"
-                >Export your Postman collection as JSON.</strong
-              >
-              In Postman:
-              <span class="text-[#94a3af]"
-                >collection menu → Export → Collection v2.1 (recommended).</span
-              >
-              TestLens reads that export directly—no manual conversion needed.
+              <strong class="font-medium text-[#e5e7eb]">Export your collection from your API tool.</strong>
+              The format is <strong class="text-[#a5b4fc]">auto-detected</strong> — no manual conversion needed:
+              <ul class="mt-2 space-y-1.5 border-l-2 border-[#1f2937] pl-4 text-[#9ca3af]">
+                <li>
+                  <span class="font-semibold text-[#c7d2fe]">Postman v2.1</span> (recommended) —
+                  collection ··· menu &rarr; Export &rarr; Collection v2.1
+                </li>
+                <li>
+                  <span class="font-semibold text-[#c7d2fe]">Postman v1</span> —
+                  collection ··· menu &rarr; Export &rarr; Collection v1
+                </li>
+                <li>
+                  <span class="font-semibold text-[#c7d2fe]">Insomnia</span> —
+                  Application menu &rarr; Export Data &rarr; Current Workspace &rarr; export as JSON
+                </li>
+                <li>
+                  <span class="font-semibold text-[#c7d2fe]">Bruno</span> —
+                  right-click the collection &rarr; Export &rarr; save as JSON
+                </li>
+                <li>
+                  <span class="font-semibold text-[#c7d2fe]">HAR file</span> —
+                  browser DevTools &rarr; Network tab &rarr; right-click any request &rarr;
+                  "Save all as HAR"; or export from Proxyman / Charles / Fiddler
+                </li>
+              </ul>
             </li>
             <li class="text-[#cbd5e1]">
-              <strong class="font-medium text-[#e5e7eb]"
-                >Add your OpenAPI</strong
-              >
-              in the
-              <span class="text-[#a5b4fc]">OpenAPI / Swagger</span> panel:
-              upload the JSON first if you can, or paste the spec URL (optional).
+              <strong class="font-medium text-[#e5e7eb]">Upload your OpenAPI spec</strong>
+              in the <span class="text-[#a5b4fc]">left panel</span> — drag &amp; drop or click to browse.
+              Paste a URL there too if you prefer.
             </li>
             <li class="text-[#cbd5e1]">
-              <strong class="font-medium text-[#e5e7eb]"
-                >Upload your Postman collection file</strong
-              >
-              in the panel on the right.
+              <strong class="font-medium text-[#e5e7eb]">Upload your collection file</strong>
+              in the <span class="text-[#c4b5fd]">right panel</span>.
+              Drop any supported format — TestLens detects it automatically and shows a confirmation toast.
             </li>
             <li class="text-[#cbd5e1]">
-              <strong class="font-medium text-[#e5e7eb]"
-                >Click “Compare coverage.”</strong
-              >
-              You will see summary metrics and lists of matched, missing, and
-              extra requests. You can download a report or open the dashboard
-              links from the results section.
+              <strong class="font-medium text-[#e5e7eb]">Click "Compare coverage."</strong>
+              You will see summary metrics, a coverage progress bar, and three lists —
+              Covered, Missing, and Extra. Download results as
+              <strong class="text-[#9ca3af]">Markdown</strong>,
+              <strong class="text-[#9ca3af]">CSV</strong>, or
+              <strong class="text-[#9ca3af]">PDF</strong>,
+              or open the visual dashboard.
             </li>
           </ol>
           <div
             class="mt-4 rounded-lg border border-amber-500/25 bg-amber-500/5 px-3 py-2.5 text-xs leading-relaxed text-[#fde68a]"
           >
             <p class="font-semibold text-amber-100">
-              Different path parameter names in Swagger vs Postman?
+              Different path parameter names between spec and collection?
             </p>
             <p class="mt-1.5 text-[#fcd34d]/95">
               You do <strong class="text-amber-50">not</strong> need to configure
               anything. TestLens compares paths by
               <strong class="text-amber-50">method</strong>,
               <strong class="text-amber-50">segment shape</strong>, and
-              <strong class="text-amber-50">literal text</strong>; a
+              <strong class="text-amber-50">literal text</strong> — a
               <code class="rounded bg-[#0f172a]/90 px-1 text-[#fef3c7]">{name}</code>
-              in the spec matches the same slot in Postman even if the brace
-              name differs (or Postman uses a real value like
-              <code class="rounded bg-[#0f172a]/90 px-1 text-[#fef3c7]">123</code>).
-              Open
+              in the spec matches the same slot in any collection even if the brace
+              name differs or a concrete value like
+              <code class="rounded bg-[#0f172a]/90 px-1 text-[#fef3c7]">123</code>
+              is used. Open
               <strong class="text-amber-50">How path matching works</strong>
               below for the full rules.
+            </p>
+          </div>
+        </details>
+
+        <!-- Supported formats reference card -->
+        <details
+          id="supported-formats-details"
+          class="mb-5 rounded-xl border border-[#6366f1]/25 bg-[#0f172a]/80 px-3 py-2 text-sm text-[#9ca3af] shadow-sm open:pb-3"
+        >
+          <summary
+            class="cursor-pointer list-none font-semibold text-[#e5e7eb] marker:hidden [&::-webkit-details-marker]:hidden"
+          >
+            <span class="mr-2 inline-block text-[#a5b4fc] transition-transform duration-200">▸</span>
+            Supported file formats
+            <span class="ml-2 text-xs font-normal text-[#6b7280]">(click to expand)</span>
+          </summary>
+
+          <div class="mt-3 space-y-4 border-t border-[#1f2937] pt-3">
+
+            <!-- OpenAPI spec -->
+            <div>
+              <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-[#a5b4fc]">
+                OpenAPI / Swagger spec (left panel)
+              </p>
+              <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <div class="rounded-lg border border-[#1f2937] bg-[#111827] px-3 py-2">
+                  <p class="font-medium text-[#e5e7eb]">OpenAPI JSON <code class="ml-1 rounded bg-[#0f172a] px-1 text-[#c7d2fe]">.json</code></p>
+                  <p class="mt-0.5 text-xs text-[#6b7280]">OpenAPI 2 (Swagger), 3.0, 3.1 in JSON format. Most tools export this by default.</p>
+                </div>
+                <div class="rounded-lg border border-[#1f2937] bg-[#111827] px-3 py-2">
+                  <p class="font-medium text-[#e5e7eb]">OpenAPI YAML <code class="ml-1 rounded bg-[#0f172a] px-1 text-[#c7d2fe]">.yaml</code> / <code class="rounded bg-[#0f172a] px-1 text-[#c7d2fe]">.yml</code></p>
+                  <p class="mt-0.5 text-xs text-[#6b7280]">Same spec in YAML format — common when authoring specs by hand or with code-first generators.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Collection formats -->
+            <div>
+              <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-[#c4b5fd]">
+                Collection / capture file (right panel — auto-detected)
+              </p>
+              <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <div class="rounded-lg border border-[#1f2937] bg-[#111827] px-3 py-2">
+                  <p class="font-medium text-[#e5e7eb]">Postman v2 / v2.1 <span class="ml-1 text-xs text-[#6b7280]">.json</span></p>
+                  <p class="mt-0.5 text-xs text-[#6b7280]">
+                    Export: collection ··· menu &rarr; Export &rarr; <strong class="text-[#9ca3af]">Collection v2.1</strong> (recommended)
+                  </p>
+                </div>
+                <div class="rounded-lg border border-[#1f2937] bg-[#111827] px-3 py-2">
+                  <p class="font-medium text-[#e5e7eb]">Postman v1 <span class="ml-1 text-xs text-[#6b7280]">.json</span></p>
+                  <p class="mt-0.5 text-xs text-[#6b7280]">
+                    Export: collection ··· menu &rarr; Export &rarr; <strong class="text-[#9ca3af]">Collection v1</strong>
+                  </p>
+                </div>
+                <div class="rounded-lg border border-[#1f2937] bg-[#111827] px-3 py-2">
+                  <p class="font-medium text-[#e5e7eb]">Insomnia v4 <span class="ml-1 text-xs text-[#6b7280]">.json</span></p>
+                  <p class="mt-0.5 text-xs text-[#6b7280]">
+                    Export: Application &rarr; Export Data &rarr; Current Workspace &rarr; select <strong class="text-[#9ca3af]">Insomnia v4 JSON</strong>
+                  </p>
+                </div>
+                <div class="rounded-lg border border-[#1f2937] bg-[#111827] px-3 py-2">
+                  <p class="font-medium text-[#e5e7eb]">Bruno <span class="ml-1 text-xs text-[#6b7280]">.json</span></p>
+                  <p class="mt-0.5 text-xs text-[#6b7280]">
+                    Export: right-click the collection in the sidebar &rarr; Export &rarr; <strong class="text-[#9ca3af]">save as JSON</strong>
+                  </p>
+                </div>
+                <div class="rounded-lg border border-[#1f2937] bg-[#111827] px-3 py-2 sm:col-span-2">
+                  <p class="font-medium text-[#e5e7eb]">HAR (HTTP Archive) <span class="ml-1 text-xs text-[#6b7280]">.har</span></p>
+                  <p class="mt-0.5 text-xs text-[#6b7280]">
+                    Chrome / Edge: DevTools &rarr; Network &rarr; right-click &rarr; <strong class="text-[#9ca3af]">"Save all as HAR with content"</strong>.<br>
+                    Firefox: DevTools &rarr; Network &rarr; gear icon &rarr; <strong class="text-[#9ca3af]">Save All as HAR</strong>.<br>
+                    Also works with exports from Proxyman, Charles Proxy, and Fiddler.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <p class="text-xs text-[#4b5563]">
+              All formats are detected automatically by their internal structure — you do not need to rename files or select a format manually.
             </p>
           </div>
         </details>
@@ -523,31 +615,27 @@
             >
               OpenAPI / Swagger
             </p>
+            <div class="mt-2 flex flex-wrap gap-1.5">
+              <span class="format-badge format-badge--indigo">JSON</span>
+              <span class="format-badge format-badge--indigo">YAML</span>
+              <span class="format-badge format-badge--indigo">YML</span>
+            </div>
           </header>
 
           <section class="flex flex-col gap-3">
             <label class="block text-sm font-medium text-[#e5e7eb]"
-              >Upload OpenAPI JSON
+              >Upload OpenAPI spec
               <span class="font-normal text-[#34d399]">· recommended</span></label
             >
             <p class="source-panel-card__helper text-xs leading-relaxed">
-              <strong class="text-[#9ca3af]">First choice:</strong> if you have
-              <code class="rounded bg-[#0f172a] px-1 text-[#9ca3af]">openapi.json</code>
-              on disk, use this. If
-              <strong class="text-[#9ca3af]">pasting the URL fails</strong> (CORS
-              or errors), open the same link in a
-              <strong class="text-[#9ca3af]">new browser tab</strong>, wait until
-              you see the JSON, then
-              <strong class="text-[#9ca3af]">Save As</strong> (or
-              <kbd class="rounded bg-[#0f172a] px-1 font-mono text-[#9ca3af]"
-                >Cmd+S</kbd
-              >
-              /
-              <kbd class="rounded bg-[#0f172a] px-1 font-mono text-[#9ca3af]"
-                >Ctrl+S</kbd
-              >) and upload the file here. A selected file
-              <strong class="text-[#9ca3af]">always wins</strong> over a pasted
-              URL.
+              <strong class="text-[#9ca3af]">Accepts JSON or YAML</strong>
+              (<code class="rounded bg-[#0f172a] px-1 text-[#9ca3af]">.json</code>,
+              <code class="rounded bg-[#0f172a] px-1 text-[#9ca3af]">.yaml</code>,
+              <code class="rounded bg-[#0f172a] px-1 text-[#9ca3af]">.yml</code>).
+              If pasting a URL fails due to CORS, open the link in a new tab,
+              <strong class="text-[#9ca3af]">Save As</strong> (Cmd+S / Ctrl+S)
+              and upload. A selected file
+              <strong class="text-[#9ca3af]">always wins</strong> over a pasted URL.
             </p>
             <div
               id="swagger-drop-zone"
@@ -556,7 +644,7 @@
               <input
                 id="swagger-file"
                 type="file"
-                accept=".json,application/json"
+                accept=".json,.yaml,.yml,application/json,text/yaml"
                 class="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
               />
               <svg
@@ -574,7 +662,7 @@
                 />
               </svg>
               <span class="text-center text-xs font-medium text-[#9ca3af] sm:text-sm"
-                >Drag &amp; drop or click — OpenAPI / Swagger JSON</span
+                >Drag &amp; drop or click — OpenAPI JSON or YAML</span
               >
               <span
                 id="swagger-file-name"
@@ -699,16 +787,24 @@
             <p
               class="text-xs font-semibold uppercase tracking-[0.12em] text-[#9ca3af]"
             >
-              Postman
-            </p>
-            <p class="mt-2 text-sm font-medium text-[#e5e7eb]">
-              Collection JSON
+              Collection
               <span class="font-normal text-red-400/90">· required</span>
             </p>
+            <div class="mt-2 flex flex-wrap gap-1.5">
+              <span class="format-badge format-badge--purple">Postman v1/v2</span>
+              <span class="format-badge format-badge--purple">Insomnia</span>
+              <span class="format-badge format-badge--purple">Bruno</span>
+              <span class="format-badge format-badge--purple">HAR</span>
+            </div>
           </header>
           <p class="source-panel-card__helper text-xs leading-relaxed">
-            Export your collection as JSON from Postman (collection menu →
-            Export → v2.1). This upload is required to run the comparison.
+            Upload a
+            <strong class="text-[#9ca3af]">Postman v1 / v2 / v2.1</strong>,
+            <strong class="text-[#9ca3af]">Insomnia v4</strong> (JSON export),
+            <strong class="text-[#9ca3af]">Bruno</strong> (JSON export),
+            or a <strong class="text-[#9ca3af]">HAR file</strong>
+            captured from DevTools / Proxyman / Charles.
+            Format is auto-detected.
           </p>
           <div class="postman-drop-area flex min-h-0 flex-1 flex-col">
             <div
@@ -718,7 +814,7 @@
               <input
                 id="collection-file"
                 type="file"
-                accept=".json,application/json"
+                accept=".json,.har,application/json"
                 required
                 class="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
               />
@@ -737,7 +833,10 @@
                 />
               </svg>
               <span class="text-center text-xs font-medium text-[#9ca3af] sm:text-sm"
-                >Drag &amp; drop or click — collection JSON (required)</span
+                >Drag &amp; drop or click</span
+              >
+              <span class="mt-0.5 text-center text-[11px] text-[#6b7280]"
+                >Postman · Insomnia · Bruno · HAR</span
               >
               <span
                 id="collection-file-name"
@@ -1134,7 +1233,8 @@
         Built for QA &amp; developers
       </footer>
     </main>
-    <script src="app.js?v=26"></script>
-    <script src="ui.js?v=8"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="app.js?v=27"></script>
+    <script src="ui.js?v=9"></script>
   </body>
 </html>
