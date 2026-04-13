@@ -96,7 +96,7 @@ function extractPostmanRequests(collection, host, halHost) {
   const endpoints = [];
   let totalRequests = 0;
 
-  function walkItems(items) {
+  function walkItems(items, folderPath) {
     if (!Array.isArray(items)) return;
     for (const item of items) {
       if (item.request) {
@@ -105,13 +105,18 @@ function extractPostmanRequests(collection, host, halHost) {
         const path = normalizePath(
           parseRequestUrl(item.request, host, halHost)
         );
-        if (method && path) endpoints.push([method, path]);
+        if (method && path) endpoints.push([method, path, folderPath || ""]);
       }
-      if (item.item) walkItems(item.item);
+      if (item.item) {
+        const childFolder = folderPath
+          ? folderPath + " › " + (item.name || "")
+          : (item.name || "");
+        walkItems(item.item, childFolder);
+      }
     }
   }
 
-  if (collection.item) walkItems(collection.item);
+  if (collection.item) walkItems(collection.item, "");
   return { endpoints, totalRequests };
 }
 
@@ -122,10 +127,16 @@ function readJsonFile(file) {
       try {
         resolve(JSON.parse(reader.result));
       } catch (e) {
-        reject(new Error("Invalid JSON in file: " + file.name));
+        reject(new Error(
+          `"${file.name}" is not valid JSON. ` +
+          "Make sure you exported the file correctly and didn't save it as a different format. " +
+          "In Postman: Collection menu → Export → Collection v2.1 (JSON)."
+        ));
       }
     };
-    reader.onerror = () => reject(new Error("Could not read " + file.name));
+    reader.onerror = () => reject(new Error(
+      `Could not read "${file.name}". The file may be empty, locked, or an unsupported format.`
+    ));
     reader.readAsText(file, "UTF-8");
   });
 }
@@ -552,9 +563,10 @@ function runAnalysis(openapi, collection, options) {
 
   const canonicalOps = swaggerEndpoints.map(([m, p]) => ({ method: m, path: p }));
 
-  const postmanPairs = postmanEndpoints.map(([m, p]) => [
+  const postmanPairs = postmanEndpoints.map(([m, p, folder]) => [
     m,
     normalizePath(p),
+    folder || "",
   ]);
 
   const coveredCanonical = new Set();
@@ -622,13 +634,22 @@ function validateOpenApiDocument(openapi) {
   if (!openapi || typeof openapi !== "object") {
     return "That file is not a JSON object. Export the spec as OpenAPI JSON.";
   }
+  // Detect if user uploaded a Postman collection in the OpenAPI slot
+  if (openapi.info && openapi.item && Array.isArray(openapi.item)) {
+    return "This looks like a Postman collection, not an OpenAPI spec. " +
+      "Please upload your OpenAPI / Swagger JSON in the left panel, " +
+      "and your Postman collection in the right panel.";
+  }
   const hasVersion =
     typeof openapi.openapi === "string" || typeof openapi.swagger === "string";
   if (!openapi.paths || typeof openapi.paths !== "object") {
     if (!hasVersion) {
-      return "This JSON has no `paths` section. Use an OpenAPI 2.x or 3.x file (it should include `openapi` or `swagger` plus `paths`).";
+      return "This JSON has no `paths` section. Use an OpenAPI 2.x or 3.x file " +
+        "(it must include `openapi` or `swagger` plus `paths`). " +
+        "If this is a Postman environment or globals file, export the Collection instead.";
     }
-    return "This JSON has no `paths` object. Check that you loaded the full OpenAPI spec.";
+    return "This JSON has an `openapi` version field but no `paths` object. " +
+      "Make sure you exported the full OpenAPI spec, not just the info or components section.";
   }
   return null;
 }
@@ -775,13 +796,23 @@ function setActiveTab(name) {
   els.tabBtns.forEach((b) => {
     b.classList.toggle("active", b.getAttribute("data-tab") === name);
   });
+  // Clear search on tab switch
+  const searchInput = document.getElementById("list-search");
+  if (searchInput) searchInput.value = "";
+  const countEl = document.getElementById("list-search-count");
+  if (countEl) countEl.textContent = "";
   if (!lastLists) return;
-  const map = {
-    automated: formatEndpointList(lastLists.matchedRequests),
-    missing: formatEndpointList(lastLists.missingApis),
-    unmatched: formatEndpointList(lastLists.unmatchedRequests),
+  const pairsMap = {
+    automated: lastLists.matchedRequests,
+    missing: lastLists.missingApis,
+    unmatched: lastLists.unmatchedRequests,
   };
-  els.listContent.textContent = map[name] || "";
+  const pairs = pairsMap[name] || [];
+  if (typeof window.TL_renderListFull === "function") {
+    window.TL_renderListFull(pairs, name);
+  } else {
+    els.listContent.textContent = formatEndpointList(pairs);
+  }
 }
 
 els.tabBtns.forEach((b) => {
@@ -856,6 +887,17 @@ els.form.addEventListener("submit", async (e) => {
   try {
     setCompareStatus("Reading your Postman file…");
     const collection = await readJsonFile(collFiles[0]);
+    // Detect if an OpenAPI spec was mistakenly uploaded as the collection
+    if (collection && typeof collection === "object" &&
+        (typeof collection.openapi === "string" || typeof collection.swagger === "string" ||
+         (collection.paths && typeof collection.paths === "object" && !collection.item))) {
+      showError(
+        "The file in the Postman slot looks like an OpenAPI spec, not a collection. " +
+        "Please upload your Postman collection JSON in the right panel, " +
+        "and your OpenAPI / Swagger spec in the left panel."
+      );
+      return;
+    }
     let openapi = null;
 
     if (swaggerF && swaggerF.length) {
@@ -1009,6 +1051,23 @@ els.form.addEventListener("submit", async (e) => {
     } catch {
       /* private mode / quota */
     }
+
+    // Save to run history (last 5 runs)
+    try {
+      const histKey = "testlens-run-history";
+      const hist = JSON.parse(localStorage.getItem(histKey) || "[]");
+      hist.unshift({
+        id: Date.now(),
+        generatedAt: new Date().toISOString(),
+        totalApis: r.totalApis,
+        covered: r.uniqueAutomated,
+        missing: r.remaining,
+        coveragePct: r.coveragePct,
+      });
+      hist.splice(5);
+      localStorage.setItem(histKey, JSON.stringify(hist));
+      window.dispatchEvent(new CustomEvent("testlens-history-updated"));
+    } catch { /* quota / private mode */ }
 
     const ann = document.getElementById("results-announcer");
     if (ann) {
