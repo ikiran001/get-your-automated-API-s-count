@@ -11,7 +11,8 @@
  * For private or internal APIs, downloading the JSON and using "Upload" is safer and more reliable.
  *
  * The math here is meant to match api_coverage.py in this project.
- * Paths match by structure: literal segments must match; {any} matches any param name in that slot.
+ * Paths are auto-normalized (decode, strip leading {{env}}, collapse slashes, trim trailing /)
+ * then matched by structure: literals must match; {any} matches any param name in that slot.
  */
 
 const HTTP_METHODS = new Set([
@@ -23,11 +24,130 @@ const HTTP_METHODS = new Set([
   "OPTIONS",
 ]);
 
-function normalizePath(path) {
-  if (!path) return "";
-  let p = path.replace(/\{\{([^}]+)\}\}/g, "{$1}");
-  p = p.replace("{hosting_account_id}", "{hosting_id}");
+/** Same keys as api_coverage.py PATH_PARAM_ALIASES — extend either side for parity. */
+const PATH_PARAM_ALIASES = Object.freeze({
+  brand_type: "api_brand",
+  hosting_account_id: "hosting_id",
+  account_id: "account_id",
+});
+
+function pathWithoutQueryOrFragment(s) {
+  if (!s) return "";
+  return String(s).split("#")[0].split("?")[0];
+}
+
+/** True if `//` + this authority is a real network host (not a path like `//cpanel/v1`). */
+function looksLikeNetworkAuthority(authority) {
+  if (!authority) return false;
+  const hostPart = authority.split(":")[0];
+  if (/^localhost$/i.test(hostPart)) return true;
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(hostPart)) return true;
+  return /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i.test(hostPart);
+}
+
+function extractPathOnly(raw) {
+  const s = String(raw ?? "").trim();
+  if (!s) return "";
+  if (/^[a-z][a-z+.-]*:\/\//i.test(s)) {
+    try {
+      const u = new URL(s);
+      return pathWithoutQueryOrFragment(u.pathname || "/");
+    } catch {
+      return "";
+    }
+  }
+  // `//cpanel/v1` is almost always a doubled slash path, not host "cpanel".
+  if (s.startsWith("//")) {
+    const authority = s.slice(2).split("/")[0];
+    if (looksLikeNetworkAuthority(authority)) {
+      try {
+        const u = new URL("https:" + s);
+        return pathWithoutQueryOrFragment(u.pathname || "/");
+      } catch {
+        /* fall through */
+      }
+    }
+    return pathWithoutQueryOrFragment(s.replace(/^\/+/, "/"));
+  }
+  return pathWithoutQueryOrFragment(s);
+}
+
+function applyPathParamAliases(path, aliases) {
+  return path.replace(/\{([^}]*)\}/g, (m, name) => {
+    const n = String(name || "").trim();
+    if (!n) return m;
+    const canon = Object.prototype.hasOwnProperty.call(aliases, n) ? aliases[n] : n;
+    return `{${canon}}`;
+  });
+}
+
+/**
+ * Canonical path for OpenAPI keys and Postman paths (kept in sync with api_coverage.normalize_path).
+ * @param {string} path
+ * @param {Record<string, string>} [paramAliases] optional overrides merged into PATH_PARAM_ALIASES
+ */
+function normalizePath(path, paramAliases) {
+  if (path == null) return "";
+  const merged = { ...PATH_PARAM_ALIASES, ...(paramAliases || {}) };
+  let p;
+  try {
+    p = extractPathOnly(path);
+  } catch {
+    return "";
+  }
+  if (!p) return "";
+  p = p.replace(/\\/g, "/");
+  p = safeDecodeURIPath(p);
+  p = stripPostmanLeadingBaseNoise(p);
+  p = p.replace(/\{\{([^}]+)\}\}/g, "{$1}");
+  p = applyPathParamAliases(p, merged);
+  p = p.replace(/\/+/g, "/");
+  if (p.length > 1 && p.endsWith("/")) p = p.slice(0, -1);
+  const head = p.split("?", 1)[0];
+  if (!/^[a-z][a-z+.-]*:\/\//i.test(p) && p && !p.startsWith("/") && !head.includes("://")) {
+    p = "/" + p;
+  }
   return p;
+}
+
+/** Decode pathname when URL() percent-encodes `{{var}}` etc. */
+function safeDecodeURIPath(pathname) {
+  if (!pathname || !pathname.includes("%")) return pathname || "";
+  try {
+    return decodeURIComponent(pathname);
+  } catch {
+    return pathname;
+  }
+}
+
+/**
+ * Postman "raw" URLs often prefix the path with env vars: `{{HOST}} addon_add/...`,
+ * `{{HOST}}addon_add/...`, or other names like `{{BASE_URL}}/v1/...`. If those stay in
+ * the string, URL() encodes them into the first path segment and coverage becomes 0.
+ * Strip any leading `{{...}}` (optional leading /) when followed by space, `/`, or
+ * glued to the next path segment — same rules for HOST, HAL_HOST, and generic vars.
+ */
+function stripPostmanLeadingBaseNoise(s) {
+  let t = String(s || "").trim();
+  if (!t) return t;
+  const optSlash = "\\/?";
+  const seg = String.raw`\{\{[^}]+\}\}`;
+  let prev;
+  do {
+    prev = t;
+    t = t.replace(new RegExp(`^${optSlash}${seg}\\s+`, "g"), "");
+  } while (t !== prev);
+  let prev2;
+  do {
+    prev2 = t;
+    t = t
+      .replace(new RegExp(`^${optSlash}${seg}(?=/)`, "g"), "")
+      .replace(new RegExp(`^${optSlash}${seg}(?=[^/\\s?#])`, "g"), "");
+  } while (t !== prev2);
+  if (!/^[a-z][a-z+.-]*:\/\//i.test(t) && t && !t.startsWith("/") && !t.includes("://")) {
+    t = "/" + t;
+  }
+  return t;
 }
 
 /** True if URL looks like a JSON/YAML OpenAPI endpoint. */
@@ -45,6 +165,14 @@ function openApiUrlLooksLikeJson(urlTrim) {
   }
 }
 
+/** Postman v2.1 path[] entries can be strings or { type, value } objects. */
+function postmanPathSegmentToString(seg) {
+  if (typeof seg === "string") return seg;
+  if (seg && typeof seg === "object" && typeof seg.value === "string") return seg.value;
+  if (seg == null || seg === "") return "";
+  return String(seg);
+}
+
 function parseRequestUrl(request, host, halHost) {
   const urlField = request.url;
   let rawUrl = "";
@@ -57,22 +185,55 @@ function parseRequestUrl(request, host, halHost) {
     rawUrl = urlField.raw || "";
   }
 
-  if (urlObj && Array.isArray(urlObj.path) && urlObj.path.length) {
-    return "/" + urlObj.path.join("/");
-  }
-
-  if (rawUrl) {
-    let safe = rawUrl;
-    if (host) safe = safe.replace(/\{\{HOST\}\}/g, host);
-    if (halHost) safe = safe.replace(/\{\{HAL_HOST\}\}/g, halHost);
+  // Postman stores both `raw` and split `host`/`path`. `path` alone often drops
+  // leading segments (e.g. `v1` lives under `host` as ["{{HOST}}","v1"]).
+  // Prefer non-empty `raw` — it matches what Postman shows and yields the full pathname.
+  if (String(rawUrl || "").trim()) {
+    let safe = String(rawUrl).trim();
+    safe = stripPostmanLeadingBaseNoise(safe);
+    if (host) safe = safe.replace(/\{\{HOST\}\}/gi, host);
+    if (halHost) safe = safe.replace(/\{\{HAL_HOST\}\}/gi, halHost);
     try {
       const base = "http://__postman_placeholder__";
       const u = new URL(safe, base);
-      return u.pathname || "";
+      const pn = safeDecodeURIPath(u.pathname || "");
+      if (pn) return pn;
     } catch {
-      return "";
+      /* fall through to path string / array */
     }
   }
+
+  if (urlObj && typeof urlObj.path === "string" && urlObj.path.trim()) {
+    let p = stripPostmanLeadingBaseNoise(urlObj.path.trim().replace(/\\/g, "/"));
+    if (!p.startsWith("/")) p = "/" + p;
+    return p;
+  }
+
+  if (urlObj && Array.isArray(urlObj.path) && urlObj.path.length) {
+    const segments = urlObj.path
+      .map(postmanPathSegmentToString)
+      .map((s) => String(s || "").trim().replace(/\\/g, "/").replace(/^\/+|\/+$/g, ""))
+      .filter((s) => s !== "");
+    let i = 0;
+    while (i < segments.length) {
+      const a = segments[i];
+      if (/^\{\{HOST\}\}$/i.test(a) || /^\{\{HAL_HOST\}\}$/i.test(a)) {
+        i += 1;
+        continue;
+      }
+      if (/^\{\{[^}]+\}\}$/.test(a)) {
+        i += 1;
+        continue;
+      }
+      break;
+    }
+    const rest = segments.slice(i);
+    let joined = "/" + rest.join("/");
+    joined = stripPostmanLeadingBaseNoise(joined);
+    if (!joined.startsWith("/")) joined = "/" + joined;
+    return joined;
+  }
+
   return "";
 }
 
@@ -250,6 +411,17 @@ function extractHARRequests(parsed) {
 function detectAndExtractRequests(collection, host, halHost) {
   if (!collection || typeof collection !== "object") {
     throw new Error("Collection is empty or not a valid JSON object.");
+  }
+
+  // Postman API / some tools wrap as { collection: { info, item } }
+  if (
+    !collection.info &&
+    collection.collection &&
+    typeof collection.collection === "object" &&
+    collection.collection.info &&
+    Array.isArray(collection.collection.item)
+  ) {
+    collection = collection.collection;
   }
 
   // Postman v2 / v2.1  — has info.schema + item array
@@ -653,14 +825,16 @@ async function fetchOpenApiJson(url, options = {}) {
   }
 }
 
-/** Path segments: literals, or null for `{param}`. */
+/** Path segments: literals, or null for `{param}` / Postman `:param`. */
 function pathStructureTokens(path) {
   let p = normalizePath(path || "").trim();
   if (!p) return [];
   if (!p.startsWith("/")) p = "/" + p;
-  return p.split("/").filter(Boolean).map((seg) =>
-    seg.startsWith("{") && seg.endsWith("}") && seg.length > 2 ? null : seg
-  );
+  return p.split("/").filter(Boolean).map((seg) => {
+    if (seg.startsWith("{") && seg.endsWith("}") && seg.length > 2) return null;
+    if (seg.startsWith(":") && seg.length > 1) return null;
+    return seg;
+  });
 }
 
 /**
@@ -764,7 +938,10 @@ function runAnalysis(openapi, collection, options) {
     halHost
   );
 
-  const canonicalOps = swaggerEndpoints.map(([m, p]) => ({ method: m, path: p }));
+  const canonicalOps = swaggerEndpoints.map(([m, p]) => ({
+    method: m,
+    path: normalizePath(p),
+  }));
 
   const postmanPairs = postmanEndpoints.map(([m, p, folder]) => [
     m,

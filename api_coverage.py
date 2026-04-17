@@ -2,7 +2,8 @@ import json
 import re
 import argparse
 import sys
-from urllib.parse import urlparse
+from typing import Dict, Optional
+from urllib.parse import urlparse, unquote
 
 import os
 
@@ -30,6 +31,87 @@ HAL_HOST = "https://hal.beta.unifiedlayer.com"
 #    True  = ignore deprecated endpoints in Swagger
 #    False = include deprecated endpoints
 EXCLUDE_DEPRECATED = True
+
+# ---------------------------------------------------------------------------
+# Path normalization — extend this dict so Postman/Swagger param names match
+# ---------------------------------------------------------------------------
+# Map *path parameter names* (without braces) to a single canonical name.
+# Keys are compared case-sensitively (OpenAPI / Postman names usually are).
+PATH_PARAM_ALIASES: Dict[str, str] = {
+    "brand_type": "api_brand",
+    "hosting_account_id": "hosting_id",
+    "account_id": "account_id",
+}
+
+
+def _path_without_query_or_fragment(s: str) -> str:
+    """Strip ?query and #fragment from a path or URL string."""
+    if not s:
+        return ""
+    s = s.split("#", 1)[0]
+    s = s.split("?", 1)[0]
+    return s
+
+
+def _looks_like_network_authority(authority: str) -> bool:
+    """
+    True if //authority/... is a scheme-relative network URL, not a path like
+    //cpanel/v1 (where the first segment is literally 'cpanel').
+    """
+    if not authority:
+        return False
+    host_part = authority.split(":", 1)[0]
+    if re.fullmatch(r"(?i)localhost", host_part):
+        return True
+    if re.fullmatch(r"\d{1,3}(\.\d{1,3}){3}", host_part):
+        return True
+    return bool(
+        re.fullmatch(
+            r"[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+",
+            host_part,
+            flags=re.I,
+        )
+    )
+
+
+def _extract_path_only(raw: str) -> str:
+    """
+    Return only the path portion: no scheme/host, no query, no fragment.
+    Handles full URLs, scheme-relative URLs, and relative paths.
+    """
+    s = (raw or "").strip()
+    if not s:
+        return ""
+    if re.match(r"^[a-z][a-z+.-]*://", s, flags=re.I):
+        try:
+            u = urlparse(s)
+            return _path_without_query_or_fragment(u.path or "/")
+        except Exception:
+            return ""
+    if s.startswith("//"):
+        authority = s[2:].split("/", 1)[0]
+        if _looks_like_network_authority(authority):
+            try:
+                u = urlparse("https:" + s)
+                return _path_without_query_or_fragment(u.path or "/")
+            except Exception:
+                pass
+        return _path_without_query_or_fragment(re.sub(r"^/+", "/", s))
+    return _path_without_query_or_fragment(s)
+
+
+def _apply_path_param_aliases(path: str, aliases: Dict[str, str]) -> str:
+    """Rewrite {name} segments using aliases; unknown names unchanged."""
+
+    def repl(m: re.Match) -> str:
+        name = (m.group(1) or "").strip()
+        if not name:
+            return m.group(0)
+        canon = aliases.get(name, name)
+        return "{" + str(canon) + "}"
+
+    return re.sub(r"\{([^}]*)\}", repl, path)
+
 
 def normalize_stash_url(url):
     """Convert stash browse URL to raw URL when possible."""
@@ -97,22 +179,134 @@ def extract_swagger_paths(swagger_json, exclude_deprecated=True):
                 swagger_endpoints.append((method.upper(), path))
     return swagger_endpoints
 
-def normalize_path(path):
+def strip_postman_leading_base_noise(s: str) -> str:
     """
-    Normalize path parameters to Swagger style: {{id}} -> {id}.
-
-    Paths are compared structurally (see path_structure_tokens): literal
-    segments must match; {any_name} matches any other {other_name} in the
-    same position (e.g. Swagger {account_id} vs Postman {acc_id}).
-
-    Extra alias (still applied before structural compare):
-      {hosting_account_id} -> {hosting_id}
+    Strip leading Postman env segments ({{HOST}}, {{BASE_URL}}, etc.): spaced, slash,
+    or glued to the next segment. If they survive into urlparse, they become an extra
+    path segment and nothing matches the OpenAPI paths.
     """
-    if not path:
+    t = (s or "").strip()
+    if not t:
+        return t
+    seg = r"\{\{[^}]+\}\}"
+    prev = None
+    while prev != t:
+        prev = t
+        t = re.sub(r"^/?" + seg + r"\s+", "", t)
+    prev2 = None
+    while prev2 != t:
+        prev2 = t
+        t = re.sub(r"^/?" + seg + r"(?=/)", "", t)
+        t = re.sub(r"^/?" + seg + r"(?=[^/\s?#])", "", t)
+    head = t.split("?", 1)[0]
+    if not re.match(r"^[a-z][a-z+.-]*://", t, flags=re.I) and t and not t.startswith("/") and "://" not in head:
+        t = "/" + t
+    return t
+
+
+def normalize_path(path: str, param_aliases: Optional[Dict[str, str]] = None) -> str:
+    """
+    Return a single canonical path string for Swagger or Postman inputs.
+
+    Steps (order matters):
+      1. Trim; malformed / empty -> "".
+      2. If value looks like a URL, keep only urlparse.path (drops host, query, fragment).
+      3. Else strip ?query and #fragment from relative paths.
+      4. Backslashes -> slashes; percent-decode when safe.
+      5. Strip leading Postman env segments ({{HOST}}, {{BASE_URL}}, …).
+      6. Convert Postman ``{{var}}`` to Swagger-style ``{var}``.
+      7. Apply PATH_PARAM_ALIASES (plus optional ``param_aliases`` override/extend).
+      8. Collapse duplicate slashes; trim trailing slash (except "/"); ensure leading "/".
+
+    Examples::
+
+        normalize_path("{{HOST}}addon_decom/{{brand_type}}")
+        # -> "/addon_decom/{api_brand}"
+
+        normalize_path("/addon_decom/{api_brand}?x=1#frag")
+        # -> "/addon_decom/{api_brand}"
+
+        normalize_path("https://api.example.com/addon_decom/{{brand_type}}?a=1")
+        # -> "/addon_decom/{api_brand}"
+    """
+    if path is None:
         return ""
-    path = re.sub(r"\{\{([^}]+)\}\}", r"{\1}", path)
-    path = path.replace("{hosting_account_id}", "{hosting_id}")
-    return path
+    merged_aliases: Dict[str, str] = dict(PATH_PARAM_ALIASES)
+    if param_aliases:
+        merged_aliases.update(param_aliases)
+
+    try:
+        p = _extract_path_only(str(path))
+    except Exception:
+        return ""
+    if not p:
+        return ""
+
+    p = p.replace("\\", "/")
+    try:
+        if "%" in p:
+            p = unquote(p)
+    except Exception:
+        pass
+
+    p = strip_postman_leading_base_noise(p)
+    p = re.sub(r"\{\{([^}]+)\}\}", r"{\1}", p)
+    p = _apply_path_param_aliases(p, merged_aliases)
+    p = re.sub(r"/+", "/", p)
+    if len(p) > 1 and p.endswith("/"):
+        p = p[:-1]
+
+    head = p.split("?", 1)[0]
+    if (
+        not re.match(r"^[a-z][a-z+.-]*://", p, flags=re.I)
+        and p
+        and not p.startswith("/")
+        and "://" not in head
+    ):
+        p = "/" + p
+    return p
+
+
+def postman_path_segment_to_str(seg) -> str:
+    """Postman v2.1 path[] entries can be strings or dicts with a 'value' field."""
+    if seg is None:
+        return ""
+    if isinstance(seg, str):
+        return seg
+    if isinstance(seg, dict):
+        v = seg.get("value")
+        if isinstance(v, str):
+            return v
+        for k in ("path", "key", "description"):
+            kk = seg.get(k)
+            if isinstance(kk, str):
+                return kk
+        return ""
+    return str(seg)
+
+
+def join_postman_path_list(path_list):
+    """Join Postman url.path; drop leading {{HOST}} / {{HAL_HOST}} segments."""
+    segs = []
+    for x in path_list:
+        if x is None:
+            continue
+        s = postman_path_segment_to_str(x).strip().replace("\\", "/")
+        s = s.strip("/")
+        if s:
+            segs.append(s)
+    while segs:
+        a = segs[0]
+        if re.fullmatch(r"\{\{HOST\}\}", a, flags=re.I) or re.fullmatch(
+            r"\{\{HAL_HOST\}\}", a, flags=re.I
+        ):
+            segs = segs[1:]
+            continue
+        if re.fullmatch(r"\{\{[^}]+\}\}", a):
+            segs = segs[1:]
+            continue
+        break
+    return "/" + "/".join(segs)
 
 
 def path_structure_tokens(path: str):
@@ -129,6 +323,8 @@ def path_structure_tokens(path: str):
     tokens = []
     for part in parts:
         if len(part) >= 2 and part.startswith("{") and part.endswith("}"):
+            tokens.append(None)
+        elif len(part) >= 2 and part.startswith(":"):
             tokens.append(None)
         else:
             tokens.append(part)
@@ -234,28 +430,66 @@ def postman_request_matches_swagger(
 def normalize_postman_url(raw_url, url_obj):
     """
     Extract a stable path from a Postman request URL.
-    - Prefer url.path array when available
-    - Fallback to raw URL parsing
-    - Drop query string
+    Prefer non-empty ``raw`` (full URL string) over ``path`` / ``host`` parts:
+    Postman often puts ``v1`` in ``host`` and only resource segments in ``path``,
+    so using ``path`` alone drops the ``/v1`` prefix vs OpenAPI.
     """
-    if isinstance(url_obj, dict):
-        path_list = url_obj.get("path")
-        if isinstance(path_list, list) and path_list:
-            return "/" + "/".join(path_list)
+    raw = (raw_url or "").strip()
+    if isinstance(url_obj, dict) and not raw:
+        raw = (url_obj.get("raw") or "").strip()
 
-    if raw_url:
-        safe_raw = raw_url.replace("{{HOST}}", HOST)
+    if raw:
+        safe_raw = strip_postman_leading_base_noise(raw)
+        safe_raw = safe_raw.replace("{{HOST}}", HOST)
         safe_raw = safe_raw.replace("{{HAL_HOST}}", HAL_HOST)
         parsed = urlparse(safe_raw)
-        return parsed.path
+        path = parsed.path or ""
+        try:
+            path = unquote(path)
+        except Exception:
+            pass
+        if path and not path.startswith("/") and not parsed.scheme:
+            path = "/" + path
+        if path:
+            return path
+
+    if isinstance(url_obj, dict):
+        path_list = url_obj.get("path")
+        if isinstance(path_list, str) and path_list.strip():
+            p = path_list.strip().replace("\\", "/")
+            p = strip_postman_leading_base_noise(p)
+            if not p.startswith("/"):
+                p = "/" + p
+            try:
+                return unquote(p)
+            except Exception:
+                return p
+        if isinstance(path_list, list) and path_list:
+            p = join_postman_path_list(path_list)
+            p = strip_postman_leading_base_noise(p)
+            try:
+                return unquote(p)
+            except Exception:
+                return p
 
     return ""
+
+def unwrap_postman_collection(coll):
+    """Some exports wrap the collection as {\"collection\": {info, item}}."""
+    if not isinstance(coll, dict):
+        return coll
+    inner = coll.get("collection")
+    if isinstance(inner, dict) and inner.get("info") and isinstance(inner.get("item"), list):
+        return inner
+    return coll
+
 
 def extract_postman_requests(postman_collection):
     """
     Extract (method, path) tuples from the Postman .json collection.
     Supports nested folders of any depth.
     """
+    postman_collection = unwrap_postman_collection(postman_collection)
     postman_endpoints = []
     total_requests = 0
 
@@ -264,8 +498,16 @@ def extract_postman_requests(postman_collection):
         for item in items:
             if "request" in item:
                 method = item["request"].get("method", "").upper()
-                url_obj = item["request"].get("url", {})
-                raw_url = url_obj.get("raw", "") if isinstance(url_obj, dict) else ""
+                url_field = item["request"].get("url", {})
+                if isinstance(url_field, str):
+                    raw_url = url_field
+                    url_obj = {}
+                elif isinstance(url_field, dict):
+                    url_obj = url_field
+                    raw_url = url_field.get("raw", "")
+                else:
+                    raw_url = ""
+                    url_obj = {}
                 path = normalize_postman_url(raw_url, url_obj)
                 path = normalize_path(path)
                 if method and path:
